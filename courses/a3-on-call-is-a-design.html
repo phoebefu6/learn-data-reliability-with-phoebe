@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Leader session 3 of 6. The rota is the last on-call decision, not the first. What pages, how often, and what the person is expected to do come before any name goes on a calendar. Harborlight's month: 35 pages at 14 percent useful, or 5 pages at 100 percent, for the same five incidents.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="On-call is a design, not a rota - learn data reliability with phoebe">
+<meta property="og:description" content="Leader session 3 of 6. 8.2 pages a week with 14 percent useful is a design problem. Adding people to it spreads the damage.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/a3-on-call-is-a-design.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="On-call is a design, not a rota - learn data reliability with phoebe">
+<meta name="twitter:description" content="35 pages or 5 pages for the same five incidents. The pager is a policy wearing a person.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Leader session 3 · On-call is a design, not a rota - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Leader session 3 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Leader session 3 of 6</div>
+    <h1>On-call is a design, <span class="accent">not a rota</span></h1>
+    <p class="sub">Most data teams design their on-call by opening a calendar and typing names into it. The names are the last decision, and the three that come before them are usually never made: what is allowed to page, how often it will, and what the person holding the pager is expected to do when it does. Harborlight's month makes the cost concrete. Paging on every bad partition produced 35 pages in 30 nights, 8.2 a week, of which 5 were the first word of an incident. Paging on burn rate produced 5, all of them useful, for the same five incidents. Nobody on the rota changed. The design did.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Data and analytics leaders</span>
+      <span class="chip audience">Whoever owns the rota</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · Pages, load and the humane version</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: redesign one week</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 3 sits in the leader track</h2>
+    </div>
+    <p class="lede">Six sessions, one running example: the <strong>orders</strong> pipeline at Harborlight, 24 hourly partitions a night, 720 a month, feeding the settlement report that pays sellers. Session 1 replaced the word "reliable" with 95.14 percent. Session 2 turned the gap to a target into an error budget and showed that a 97 percent promise, 21.6 bad partitions a month, was gone by night 15. Tonight is about the person who gets woken when the budget is being spent. Session 4 is the postmortem afterwards, session 5 is the backfill and the debt it leaves, and session 6 reports all of it upward. The builder track writes the alerts and the runbooks; the leader track decides what a human being should be asked to carry.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The three design decisions that come before a name on a calendar, in the order they have to be made. The argument, in Harborlight's numbers, for why a noisy pager is a design fault rather than a staffing shortage. And a redesigned week for one real rota: primary, escalation, business-hours scope and a page budget you would defend in front of the team that carries it.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the rota is the wrong place to start<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A rota answers one question: whose week is it. It cannot answer what that person will be woken for, how many times, or what they are supposed to do about it. Those answers live in three other places: the alert policy, the load it produces, and the runbook the on-call opens at three in the morning. When the rota is filled in first, the other three are decided by default, which means decided by whoever configured the monitoring, months ago, without anybody's week in mind.</p>
+        <p>Harborlight's rota was tidy. Six engineers, one week each, handover on Monday. What sat underneath it was an alert on every bad partition, no escalation beyond "call the platform lead", and a runbook that consisted of the previous on-call's chat history. The tidy rota was distributing an untidy design across six people in turn, and each of them believed the problem was theirs.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The clue that a rota is carrying a design fault is that every handover sounds the same. At Harborlight the Monday message for four consecutive weeks was a variation on "rough week, mostly noise, nothing I could do about the outage". Four different people, one description. A staffing problem sounds different on different people. A design problem sounds identical.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary tonight leans on<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Page</strong> - an alert that is allowed to interrupt a person, at any hour. Everything else is a ticket, a dashboard or a morning message.</li>
+          <li><strong>Alert policy</strong> - the rule that decides when a page is sent. Paging on every bad partition is one policy. Paging when the error budget is burning faster than a threshold, measured over a fast window and a slow window, is another. Builder session 3 writes both; the leader chooses between them.</li>
+          <li><strong>Load</strong> - pages per person per week, counted from history rather than guessed.</li>
+          <li><strong>Actionable</strong> - a page that was the first word of a real incident, so something the on-call did or said changed the outcome. Defined mechanically on the bench as the first page inside an incident.</li>
+          <li><strong>Escalation path</strong> - who the on-call is allowed to wake, in what order, written down before the night it is needed.</li>
+          <li><strong>Page budget</strong> - the number of pages per person per week the team has agreed is acceptable, reviewed the way an error budget is reviewed: exceeded means something changes.</li>
+          <li><strong>Business-hours scope</strong> - the set of alerts that may only fire during the working day because nothing that matters at night depends on them.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers load, and the three inputs that come before names</span>
+      <h2>The rota is the last decision, not the first</h2>
+      <span class="tag concept">10 min live</span>
+    </div>
+    <p class="lede">Three decisions precede any name on a calendar. <strong>What pages</strong> is the alert policy. <strong>How often</strong> is the load, and it can be counted from last month rather than argued about. <strong>What the person is expected to do</strong> is the runbook. Harborlight's thirty nights, replayed under two alert policies with the same five incidents in them, show how much of the pain was in the first decision alone.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 344" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two timelines of the same thirty nights. The upper one, paging on every bad partition, shows 35 pages as bars on nights 4, 9, 15, 21 and 27, heights 3, 14, 6, 8 and 4, with only the first page of each incident marked amber as actionable and the rest red. The lower one, multi-window burn-rate alerting, shows five single amber pages on the same five nights. Both policies catch all five incidents.">
+        <style>
+          .a3aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a3aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a3aM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .a3aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a3aR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <text class="a3aH" x="14" y="30">Page on every bad partition: 35 pages in 30 nights, 8.2 a week, 5 useful (14 percent)</text>
+
+        <text class="a3aM" x="134" y="124" text-anchor="middle">3</text>
+        <rect x="125" y="129" width="19" height="14" fill="#991B1B"></rect>
+        <rect x="125" y="143" width="19" height="7" fill="#F59E0B"></rect>
+
+        <text class="a3aM" x="269" y="47" text-anchor="middle">14</text>
+        <rect x="260" y="52" width="19" height="91" fill="#991B1B"></rect>
+        <rect x="260" y="143" width="19" height="7" fill="#F59E0B"></rect>
+
+        <text class="a3aM" x="431" y="103" text-anchor="middle">6</text>
+        <rect x="422" y="108" width="19" height="35" fill="#991B1B"></rect>
+        <rect x="422" y="143" width="19" height="7" fill="#F59E0B"></rect>
+
+        <text class="a3aM" x="593" y="89" text-anchor="middle">8</text>
+        <rect x="584" y="94" width="19" height="49" fill="#991B1B"></rect>
+        <rect x="584" y="143" width="19" height="7" fill="#F59E0B"></rect>
+
+        <text class="a3aM" x="755" y="117" text-anchor="middle">4</text>
+        <rect x="746" y="122" width="19" height="21" fill="#991B1B"></rect>
+        <rect x="746" y="143" width="19" height="7" fill="#F59E0B"></rect>
+
+        <line x1="40" y1="152" x2="850" y2="152" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <text class="a3aM" x="53" y="168" text-anchor="middle">night 1</text>
+        <text class="a3aM" x="134" y="168" text-anchor="middle">4</text>
+        <text class="a3aM" x="269" y="168" text-anchor="middle">9</text>
+        <text class="a3aM" x="431" y="168" text-anchor="middle">15</text>
+        <text class="a3aM" x="593" y="168" text-anchor="middle">21</text>
+        <text class="a3aM" x="755" y="168" text-anchor="middle">27</text>
+        <text class="a3aM" x="836" y="168" text-anchor="middle">30</text>
+
+        <text class="a3aH" x="14" y="204">Multi-window burn rate: 5 pages in 30 nights, 1.2 a week, all 5 useful (100 percent)</text>
+
+        <rect x="127" y="236" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <rect x="262" y="236" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <rect x="424" y="236" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <rect x="586" y="236" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <rect x="748" y="236" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+
+        <line x1="40" y1="254" x2="850" y2="254" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <text class="a3aM" x="53" y="270" text-anchor="middle">night 1</text>
+        <text class="a3aM" x="134" y="270" text-anchor="middle">4</text>
+        <text class="a3aM" x="269" y="270" text-anchor="middle">9</text>
+        <text class="a3aM" x="431" y="270" text-anchor="middle">15</text>
+        <text class="a3aM" x="593" y="270" text-anchor="middle">21</text>
+        <text class="a3aM" x="755" y="270" text-anchor="middle">27</text>
+        <text class="a3aM" x="836" y="270" text-anchor="middle">30</text>
+
+        <rect x="40" y="292" width="12" height="12" rx="2" fill="#F59E0B"></rect>
+        <text class="a3aB" x="58" y="302">first page inside an incident: actionable</text>
+        <rect x="360" y="292" width="12" height="12" rx="2" fill="#991B1B"></rect>
+        <text class="a3aR" x="378" y="302">a further page about an incident already being worked</text>
+
+        <rect x="14" y="318" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a3aN" x="38" y="330">Same five incidents, both policies. Thirty of the 35 pages were about a failure somebody was already awake for.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - two pagers, one month, the same five incidents.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What pages: the alert policy is the first decision, and usually nobody made it<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every page that reaches a person was allowed through by a rule. At most data teams the rule is inherited: the monitoring tool's default, or a threshold somebody set during an incident two years ago and never revisited. "Page on every bad partition" is what that inheritance usually amounts to, and it feels responsible, because it never misses anything. It also never stops.</p>
+        <p>The alternative the service-reliability practice settled on is to page on the <em>rate</em> the error budget is being spent, over a fast window and a slow window, on the rising edge, with suppression so the same incident does not page twice. The builder track writes the arithmetic. What a leader needs to hold is the shape of the outcome: the second policy pages once per incident, at its first bad hour, and then trusts the person it woke to handle the rest.</p>
+        <div class="callout tip">
+          <p><strong>The alert policy and the target are separate levers.</strong> Moving the SLO from 95 to 99 percent changes how fast the budget runs out. It does not change how many times the pager goes off. Harborlight's page counts were identical under every target on the bench. Whoever asks for a tighter target to "fix on-call" is pulling the wrong lever.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>How often: count the load, do not estimate it<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Load is pages per person per week, and it is a number in last month's history rather than an opinion. Harborlight's thirty nights, five incidents, two policies:</p>
+        <table class="clean">
+          <thead><tr><th>Alert policy</th><th>Pages in 30 nights</th><th>Pages a week</th><th>First word of an incident</th><th>Incidents caught of 5</th></tr></thead>
+          <tbody>
+            <tr><td>No alerting</td><td>0</td><td>0</td><td>-</td><td>0</td></tr>
+            <tr><td>Page on every bad partition</td><td><strong>35</strong></td><td><strong>8.2</strong></td><td>5 (<strong>14 percent</strong>)</td><td>5</td></tr>
+            <tr><td>Multi-window burn rate</td><td><strong>5</strong></td><td><strong>1.2</strong></td><td>5 (<strong>100 percent</strong>)</td><td>5</td></tr>
+          </tbody>
+        </table>
+        <p>The last column is the one to read first. Both policies caught every incident. The first policy did not buy any coverage with its extra thirty pages; it bought thirty interruptions about failures the on-call was already awake for. Night 9 alone paged fourteen times for one outage. The fourteenth page carried no information the first had not.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What the person is expected to do: the runbook is part of the rota<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A page without a runbook is a request for improvisation at three in the morning. The runbook is the third input to the rota because it decides how long each page costs and how much the outcome depends on who happened to be holding the pager. Builder session 4 writes them so a tired person can follow the first three steps without thinking; the leader's question is simpler and comes first: for each thing that is allowed to page, does a written answer to "now what" exist at all.</p>
+        <p>At Harborlight the honest audit was two runbooks for five classes of page, and one of the two was a link to a dashboard. The late load on night 4 had a procedure. The corrupt batch on night 15 did not, and the on-call spent two hours discovering by hand what the settlement team's spreadsheet would have told them in five minutes.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why 8.2 a week at 14 percent useful is a design problem, not a staffing one<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The instinct when a rota is painful is to add people to it. More names, shorter weeks, a second person on nights. Under the first policy that spreads 35 pages across more people; it does not change the 35, and it does not change that 30 of them were noise. Six people each carrying a bad week is not better than three; it is the same fault with a wider blast radius, and the extra people now also believe on-call is miserable.</p>
+        <p>Fixing the design changes the number itself. The same five incidents, the same five catches, 5 pages instead of 35. That is not achievable by staffing at any headcount, and it is achievable by policy in an afternoon. The order of operations for a leader is therefore fixed: policy, then load, then runbook, and only then the calendar.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Counting "useful" honestly<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Actionable" is a word that gets argued about, and the argument is usually a way of avoiding the number. The mechanical definition that settles it: a page is actionable if it was the first page inside a real incident. The person it woke learned something they did not know and could act on. Every subsequent page about the same incident is, by definition, telling somebody who is already working on it that it is still happening.</p>
+        <ul>
+          <li><strong>It is deliberately strict.</strong> A page that arrives while the on-call is mid-fix is not useless in every sense, but it is not the reason anything got fixed, and counting it as useful hides the noise.</li>
+          <li><strong>It survives disagreement about severity.</strong> Every bad partition counts the same. Whether night 21's eight scattered failures mattered to the settlement report is a target conversation, not a paging one.</li>
+          <li><strong>It gives a percentage the team can be shown.</strong> 14 percent is a number a leader can put in front of the people carrying the pager and say: this is what we have been asking of you.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers escalation and the humane version</span>
+      <h2>The humane version, and why it is also the effective one</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">A rota people can survive is not a softer version of a rota that works. It is the same thing. The four layers are decided from the bottom up: what pages, what the person does about it, who they can wake when stuck, and only then whose week it is. Each layer inherits everything beneath it, which is why a name typed in first inherits every unmade decision.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 304" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four stacked layers. On top, the rota, whose week it is. Beneath it the escalation path, who to wake when stuck. Beneath that the runbook, what to do when it fires. At the base the alert policy, what pages and how often. A note beside each layer gives the Harborlight fact, and the numbering runs from the base upward.">
+        <style>
+          .a3bT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a3bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a3bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a3bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a3bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <rect x="14" y="24" width="540" height="52" rx="9" fill="#CBD5E1"></rect>
+        <text class="a3bH" x="30" y="55">4 · The rota: whose week it is</text>
+        <text class="a3bB" x="574" y="46">the last decision, not the first</text>
+        <text class="a3bM" x="574" y="62">a name inherits every layer beneath it</text>
+
+        <rect x="14" y="86" width="540" height="52" rx="9" fill="#94A3B8"></rect>
+        <text class="a3bH" x="30" y="117">3 · Escalation path: who to wake when stuck</text>
+        <text class="a3bB" x="574" y="108">written down before the night it is needed</text>
+        <text class="a3bM" x="574" y="124">a stuck on-call is not a heroic on-call</text>
+
+        <rect x="14" y="148" width="540" height="52" rx="9" fill="#1E293B"></rect>
+        <text class="a3bT" x="30" y="179">2 · Runbook: what to do when it fires</text>
+        <text class="a3bB" x="574" y="170">the first three steps a tired person can follow</text>
+        <text class="a3bM" x="574" y="186">Harborlight had 2 runbooks for 5 kinds of page</text>
+
+        <rect x="14" y="210" width="540" height="52" rx="9" fill="#0F172A"></rect>
+        <text class="a3bT" x="30" y="241">1 · Alert policy: what pages, and how often</text>
+        <text class="a3bB" x="574" y="232">35 pages or 5 pages for the same month</text>
+        <text class="a3bM" x="574" y="248">8.2 a week at 14 percent, or 1.2 at 100 percent</text>
+
+        <rect x="14" y="282" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a3bN" x="38" y="294">Name the rota first and the three layers under it get decided at 3am by whoever is holding the pager.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the on-call design stack, numbered in the order the decisions have to be made.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The shape of a survivable rota<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Four properties, each of which is a decision a leader can make this week without writing a line of configuration.</p>
+        <ul>
+          <li><strong>One primary, one escalation.</strong> One person holds the pager. One named person is the one they wake when stuck. Not a group, not "the team channel", one name per week, and both names are on the calendar.</li>
+          <li><strong>Business hours only for anything the settlement report does not depend on.</strong> If a failure will not change what the reader sees at nine, it does not need a human at three. It needs a ticket that is read at nine. The test is the reader's sentence, not the engineer's anxiety.</li>
+          <li><strong>A page budget per person per week.</strong> A number, agreed with the people carrying it, above which the team stops and asks what is wrong with the design. At Harborlight, two pages a week was the number the team said it could carry indefinitely; the first policy was delivering four times that.</li>
+          <li><strong>Reviewed like the error budget.</strong> Every week the pages are counted against the budget, in the same meeting where the error budget is read. Exceeded means a design action, not an apology to the person who had the week.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Escalation is a written path, so a stuck on-call is not a heroic on-call<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The word "escalation" gets treated as a failure of the on-call. It is the opposite: a working escalation path is what stops a hard night from becoming a story about one person's stamina. The path is written down before it is needed. Who to wake first, on what condition, and what to hand them. Below what threshold of time or budget the on-call is <em>expected</em> to escalate rather than permitted to. What the escalation contact is expected to do that the primary could not: authority to call the source team, authority to declare the report late, access the primary does not have.</p>
+        <p>Harborlight's path before the redesign was a single line: "call the platform lead". After it, the primary was expected to escalate at forty minutes without a fix, or at any page involving an upstream source, and the escalation contact's job was explicitly to own communication with the settlement lead so the primary could keep working. Nobody worked less hard. Fewer people worked alone.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 9: the honest case where the job was communication<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>On night 9 the upstream source stopped publishing at two in the morning and did not resume until after six. Fourteen partitions failed. Nothing the on-call could do would fix it; the data did not exist yet on Harborlight's side of the boundary. The right response was to confirm the outage, tell the settlement lead before eight which hours would be missing and when the backfill would land, and go back to sleep. That is a fifteen-minute job.</p>
+        <p>Under the first policy the on-call was paged fourteen times for it, once an hour, each page for a partition they already knew would fail. The policy punished the person for the source's failure. Under the burn-rate policy the same night produced one page at the first bad hour. The on-call did the communication, silenced nothing, and was not woken again by an outage they had already reported.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The most common shape of a bad on-call night in a data team is not a hard problem. It is an easy problem, correctly diagnosed in the first ten minutes, followed by hours of being told about it again. Teams that count their pages usually find the worst night of the month was one incident, repeatedly announced.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The quiet cost of a noisy pager<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This is an observation about teams rather than a number from the bench, and it holds across every team that has run a noisy pager for long enough. People stop reading it. Not out of negligence: as a rational adaptation to a signal that is wrong six times in seven. The on-call learns to glance at the alert title, recognise the shape, and go back to sleep. Then one night the shape is the same and the incident is not, and the one page in seven that mattered is treated like the six that did not.</p>
+        <p>A noisy pager is therefore not merely tiring. It trains the team to ignore the instrument the whole design depends on. The people carrying it are usually the last to say so, because admitting they have stopped reading the pager sounds like a confession. It is a finding about the policy, and it is the leader's job to say it first.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The page budget, reviewed like the error budget<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Session 2 made the error budget a currency: a number of bad partitions the team may spend, and a rule about what happens when it is gone. The page budget is the same instrument pointed at people instead of partitions. A page budget is a number per person per week that has been agreed in the open, is counted from the paging tool rather than remembered, and has a consequence when exceeded.</p>
+        <ul>
+          <li><strong>Set it with the people carrying it.</strong> A budget imposed from above is a target. A budget the on-calls proposed is a promise the leader has made to them.</li>
+          <li><strong>Count actionable pages separately.</strong> Two useful pages a week is a busy pipeline. Eight pages with one useful is a broken policy. The budget is on the total; the percentage tells you which fix to reach for.</li>
+          <li><strong>Exceeded means a design action.</strong> Silence an alert, move a class of failure to business hours, change the policy, fix the thing that flaps. Never "we will be more careful next week", which is a wish rather than an action, and session 4 has more to say about that.</li>
+          <li><strong>Read it in the same meeting as the error budget.</strong> The two numbers move together. A month that spent the error budget on night 15 and the page budget in week one is one month, not two problems.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Redesign one week</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">No code, one rota, one page. Bring last month's pages from whatever tool sends them; an export, a screenshot, a count on a napkin. If you have nothing to hand, use Harborlight's thirty nights: 35 pages under the current policy, five incidents on nights 4, 9, 15, 21 and 27. The output is one week of the rota redesigned from the bottom of the stack up.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Count last month's pages, and how many were the first word of an incident.</strong> Total pages, then walk the list and mark each one that told the on-call something new. Harborlight: 35 pages, 5 first words, 14 percent. Write both numbers and the percentage; the percentage is the one the team has never seen.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute pages per person per week.</strong> Divide by the number of weeks in the window, then note that whoever held the pager that week carried all of it. Harborlight: 8.2 a week under the current policy, against 1.2 under the alternative the builder track has already benched. Put the two numbers side by side.</p>
+      </div>
+      <div class="step">
+        <p><strong>List what the on-call was expected to do for each class of page, and whether a runbook existed.</strong> One row per class of failure: late load, upstream outage, corrupt batch, flapping connector, partial load. Two columns: expected action, runbook yes or no. Harborlight's honest answer was two of five, and one of those was a dashboard link.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the page budget you would defend.</strong> Pages per person per week, agreed with at least one person who has carried the pager recently, with the consequence for exceeding it in the same sentence. Read it aloud to that person before writing it down.</p>
+      </div>
+      <div class="step">
+        <p><strong>Redesign one week with primary, escalation and business-hours scope.</strong> One name as primary, one as escalation, the condition on which the primary is expected to escalate, and the list of alerts that move to business hours because the settlement report does not depend on them. That page is the rota. The calendar is just where it is published.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box bad">
+      <span class="label">✕ What most on-call policies say</span>
+On-call engineers respond to all alerts within 15 minutes and escalate to the platform lead if unable to resolve.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ What Harborlight's redesigned week said</span>
+Primary: Ana. Escalation: Devi, expected at 40 minutes without a fix or on any page naming an upstream source; Devi owns the message to settlement before 08:00.
+Pages: burn-rate policy only, one page per incident. Budget: 2 pages per person per week; a third page in any week is reviewed on Monday as a design fault.
+Business hours only: row-count drift on non-settlement tables, dashboard refresh failures, anything the 09:00 report does not read.
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Do not add a person tonight.</strong> If the redesigned week still looks unsurvivable with one primary and one escalation, the fault is in the layers below the rota and another name will not fix it. Take the page count back to whoever owns the alert policy first.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 4</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Get last month's page count for one real rota from the tool that sends the pages, not from memory. Mark the first-word pages and compute the percentage. Show it to the people who carried the pager and write down their reaction.</li>
+      <li>Finish the five-row table of page classes: expected action, runbook exists or not. For every "no", write the name of the person who would have to write it.</li>
+      <li>Propose the page budget to the team in writing, with the consequence for exceeding it. Note what they change.</li>
+      <li>For the single worst night in the window, write down how many pages it produced and how many minutes of actual work it needed. Bring the pair to session 4; that night is the postmortem you will rewrite.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Harborlight's rota is painful: 8.2 pages a week, 14 percent of them the first word of an incident. A manager proposes adding two more engineers to the rotation. What does that do?</p>
+      <button class="qopt" type="button">A · Halves the pain, because each person carries fewer weeks</button>
+      <button class="qopt" type="button">B · Spreads the same 35 pages across more people without changing the 35 or the 30 that were noise; the fault is in the alert policy</button>
+      <button class="qopt" type="button">C · Fixes it, because more people means faster response</button>
+      <p class="qwhy">The alert policy decides the pages. Under the burn-rate policy the same month produced 5 pages, all useful, with no change to the rota. Staffing cannot reach that number; design can.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">On night 9 the upstream source was down for four hours and fourteen partitions failed. Nothing on Harborlight's side could fix it. What was the on-call's job that night, and what did the every-partition policy do about it?</p>
+      <button class="qopt" type="button">A · Attempt a fix every hour; the fourteen pages were a reasonable reminder</button>
+      <button class="qopt" type="button">B · Escalate to the platform lead, who could restart the source</button>
+      <button class="qopt" type="button">C · Confirm the outage and tell the settlement lead before eight which hours were missing; the policy paged fourteen times for a failure that was not theirs to fix</button>
+      <p class="qwhy">The job was communication, about fifteen minutes of it. A policy that pages once per incident let the on-call do that and sleep. Fourteen pages punished the person for the source's failure.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">The steering committee wants on-call to be less painful and proposes tightening the SLO from 95 to 99 percent so "problems get caught earlier". What happens to the page count?</p>
+      <button class="qopt" type="button">A · Nothing; the target decides the budget and the alert policy decides the pages, and they are separate levers</button>
+      <button class="qopt" type="button">B · It falls, because a tighter target means fewer tolerated failures</button>
+      <button class="qopt" type="button">C · It rises, because more partitions count as bad</button>
+      <p class="qwhy">On the bench the page counts did not move when the target did. Tightening the target only moved the night the budget ran out, from never at 95 percent to night 9 at 99.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Load, escalation and the humane version of on-call</span>
+        <span class="note">The three inputs before the rota, the four-layer stack, one primary plus one escalation, business-hours scope and the page budget.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Harborlight's on-call bench: 35 pages against 5 for the same five incidents</span>
+        <span class="note">8.2 a week at 14 percent actionable, or 1.2 a week at 100 percent. Actionable defined as the first page inside an incident. Both policies caught all five.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Multi-window burn-rate alerting as the established alternative to threshold paging</span>
+        <span class="note">A fast and a slow window, rising edge, suppression. The bench's specific windows and rates are its own choices and are stated as such in builder session 3.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Burn-rate arithmetic and the alert configuration</span>
+        <span class="note">Builder session 3 writes it. Here a leader chooses between two outcomes and holds the shape of each.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Runbook structure</span>
+        <span class="note">Builder session 4 owns what a tired person can follow. Here the runbook is an input to the rota and the question is whether one exists.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">How a bad partition gets noticed</span>
+        <span class="note">The data observability course owns detection. Here a bad partition only has to be counted and paged on once.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">On-call for AI services, traces and spans</span>
+        <span class="note">Not covered by design. The AI observability course owns those; the objects here are tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 3 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Rota last</b><span>Alert policy, then load, then runbook, then escalation, then names on a calendar.</span></div>
+      <div class="cheat-item"><b>35 or 5</b><span>Same month, same five incidents. Every-partition paging: 35 pages. Burn rate: 5.</span></div>
+      <div class="cheat-item"><b>8.2 at 14 percent</b><span>Pages a week and the share that were the first word of an incident. 1.2 at 100 percent is the alternative.</span></div>
+      <div class="cheat-item"><b>Actionable</b><span>The first page inside a real incident. Every later page tells someone what they already know.</span></div>
+      <div class="cheat-item"><b>Separate levers</b><span>The target decides the budget. The alert policy decides the pages. Tightening the SLO does not quiet the pager.</span></div>
+      <div class="cheat-item"><b>Staffing spreads, design fixes</b><span>More names carry the same 35 pages. Only the policy can make it 5.</span></div>
+      <div class="cheat-item"><b>One primary, one escalation</b><span>Written path, expected at a threshold. A stuck on-call is not a heroic one.</span></div>
+      <div class="cheat-item"><b>Page budget</b><span>Per person per week, agreed with the carriers, reviewed like the error budget. Exceeded means a design action.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Leader session 3 of 6 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="a2-error-budgets.html">← Leader session 2 · Error budgets</a>
+      <a href="a4-postmortems.html">Leader session 4 · Postmortems that change something →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

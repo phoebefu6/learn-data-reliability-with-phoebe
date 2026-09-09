@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 3 of 8. The error budget as bad partitions, the sustainable rate that lasts the month, burn rate over a fast and a slow window, and paging on the rising edge with a suppression. Same five incidents: 35 pages under threshold paging, 5 under burn rate, and the count does not move when the target does.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Error-budget arithmetic and burn-rate alerts - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 3 of 8. Page on the incident, not on every symptom of it. 35 pages or 5, for the same five incidents.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b3-burn-rate-alerts.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Error-budget arithmetic and burn-rate alerts - learn data reliability with phoebe">
+<meta name="twitter:description" content="Two windows, a rising edge and a suppression, computed over thirty real nights.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 3 · Error-budget arithmetic and burn-rate alerts - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 3 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 3 of 8</div>
+    <h1>Error-budget arithmetic and <span class="accent">burn-rate</span> alerts</h1>
+    <p class="sub">Session 2 left a target in the contract. Tonight that target becomes a budget - a number of bad partitions you are allowed before the promise breaks - and the budget becomes the thing the pager watches. Not each bad partition: how fast the budget is being spent, over two windows, with a page only when the spending rate crosses a line and only once per crossing. Harborlight's month has five incidents. Paging on every bad partition produced 35 pages, five of them useful. Paging on burn rate produced five, all useful. Same month, same incidents, thirty fewer interruptions.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip audience">Whoever carries the pager</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · Burn rate, two windows</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: replace threshold paging</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where tonight sits in the builder track</h2>
+    </div>
+    <p class="lede">Eight sessions, one artifact: a <strong>reliability contract</strong> for one pipeline. Session 1 measured it, session 2 set the target. Tonight adds the two lines that decide whether anybody sleeps: the <strong>error budget</strong> the target implies, and the <strong>alert policy</strong> that pages when the budget is burning faster than the month can afford. Session 4 writes the runbook the page points at. Everything tonight is arithmetic over the partition log, and all of it runs as SQL.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The budget for your target in bad partitions, and the per-hour rate that would spend it exactly by night 30. A burn-rate query over two windows that pages on the rising edge and never twice inside twelve hours. And the comparison that ends the "alert on everything" argument in your team: 35 pages against 5, for the same five incidents, with the count unchanged whether the target is 95 or 99.9.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the pager should watch the budget, not the partition<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A bad partition is a symptom. An incident is the thing that produces symptoms, usually many of them in a row. Night 9 at Harborlight was one incident - the source API was down - and fourteen symptoms, one per hour. A policy that pages on symptoms woke the on-call fourteen times to tell them the same fact. The first page was information. The other thirteen were the pager confirming it had not been fixed yet, which the on-call, awake and staring at the source's status page, already knew.</p>
+        <p>Burn rate reframes the question the pager asks. Not "did a partition fail" but "is the budget being spent at a rate that will break the promise". That question is true for the whole of an incident and false in between, so it has an edge: a moment it becomes true. Paging on that edge pages once per incident, which is what "actionable" means when it is defined mechanically.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's on-call rota had a rule nobody had written down: after the third page in an hour, mute the channel and check the dashboard in the morning. It was a reasonable response to 8.2 pages a week. It also meant that on night 21, the flapping connector's eight scattered failures were muted after the third, and the partial load on night 27 was found by the settlement team. The policy had trained the humans to stop listening.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary tonight adds<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Error budget</strong> - one hundred percent minus the target, times the events in the window. At 97 percent over 720 partitions: 21.6 bad partitions.</li>
+          <li><strong>Sustainable rate</strong> - the budget spread evenly over the window's hours. 21.6 over 720 hours is 0.03 bad partitions an hour. Spend at exactly that rate and the budget is gone at the stroke of night 30, which is the definition of keeping the promise with nothing to spare.</li>
+          <li><strong>Burn rate</strong> - the actual spending rate over a window, divided by the sustainable rate. A burn rate of 1 lasts the month. A burn rate of 14.4 exhausts the budget in about two days. A burn rate of 3 exhausts it in about ten.</li>
+          <li><strong>Fast window and slow window</strong> - two lookbacks over the same hourly series. The fast one catches a burst; the slow one catches a smoulder that no single hour would flag.</li>
+          <li><strong>Rising edge</strong> - the hour the paging condition turns from false to true. The page fires here and nowhere else.</li>
+          <li><strong>Suppression</strong> - a minimum gap between pages. Twelve hours here: a second rising edge inside that gap is the same incident wearing a new hour.</li>
+          <li><strong>Actionable</strong> - the first page inside a real incident. Defined mechanically so the two policies can be compared without arguing about how the human felt.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the error budget and burn rate</span>
+      <h2>Burn rate is budget spent per hour, relative to the rate that lasts the month</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">Three numbers, each derived from the one before. The <strong>budget</strong> comes from the target. The <strong>sustainable rate</strong> comes from spreading the budget over the window. The <strong>burn rate</strong> is what you actually spent in a window, divided by what you could afford to. Nothing here needs more than division.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Thirty nights as a strip. Bottom row: bad partitions per night as bars, 3 on night 4, 14 on night 9, 6 on night 15, 8 on night 21, 4 on night 27. Middle row: burn-rate pages, one amber square on each of the five incident nights, five pages in total. Top row: threshold pages stacked per night, 3, 14, 6, 8 and 4, thirty-five in total.">
+        <style>
+          .b3aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b3aB { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b3aL { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b3aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b3aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b3aK { font: 800 10px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <text class="b3aH" x="14" y="24">Thirty nights, two policies, the same five incidents</text>
+
+        <text class="b3aL" x="14" y="104">every bad partition</text>
+        <text class="b3aR" x="14" y="120">35 pages · 8.2 a week</text>
+        <rect x="226" y="122" width="14" height="12" fill="#991B1B"></rect>
+        <text class="b3aR" x="233" y="116" text-anchor="middle">3</text>
+        <rect x="336" y="78" width="14" height="56" fill="#991B1B"></rect>
+        <text class="b3aR" x="343" y="72" text-anchor="middle">14</text>
+        <rect x="468" y="110" width="14" height="24" fill="#991B1B"></rect>
+        <text class="b3aR" x="475" y="104" text-anchor="middle">6</text>
+        <rect x="600" y="102" width="14" height="32" fill="#991B1B"></rect>
+        <text class="b3aR" x="607" y="96" text-anchor="middle">8</text>
+        <rect x="732" y="118" width="14" height="16" fill="#991B1B"></rect>
+        <text class="b3aR" x="739" y="112" text-anchor="middle">4</text>
+        <line x1="150" y1="134" x2="830" y2="134" stroke="#C4CDD9" stroke-width="1"></line>
+
+        <line x1="150" y1="148" x2="830" y2="148" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+
+        <text class="b3aL" x="14" y="172">burn rate</text>
+        <text class="b3aL" x="14" y="188">5 pages · 1.2 a week</text>
+        <rect x="226" y="168" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b3aK" x="233" y="179" text-anchor="middle">1</text>
+        <rect x="336" y="168" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b3aK" x="343" y="179" text-anchor="middle">1</text>
+        <rect x="468" y="168" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b3aK" x="475" y="179" text-anchor="middle">1</text>
+        <rect x="600" y="168" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b3aK" x="607" y="179" text-anchor="middle">1</text>
+        <rect x="732" y="168" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b3aK" x="739" y="179" text-anchor="middle">1</text>
+        <line x1="150" y1="182" x2="830" y2="182" stroke="#C4CDD9" stroke-width="1"></line>
+
+        <line x1="150" y1="198" x2="830" y2="198" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+
+        <text class="b3aL" x="14" y="254">bad partitions</text>
+        <text class="b3aB" x="14" y="270">per night, 35 in all</text>
+        <rect x="160" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="182" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="204" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="226" y="282" width="14" height="18" fill="#991B1B"></rect>
+        <rect x="248" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="270" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="292" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="314" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="336" y="216" width="14" height="84" fill="#991B1B"></rect>
+        <rect x="358" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="380" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="402" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="424" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="446" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="468" y="264" width="14" height="36" fill="#991B1B"></rect>
+        <rect x="490" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="512" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="534" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="556" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="578" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="600" y="252" width="14" height="48" fill="#991B1B"></rect>
+        <rect x="622" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="644" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="666" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="688" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="710" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="732" y="276" width="14" height="24" fill="#991B1B"></rect>
+        <rect x="754" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="776" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <rect x="798" y="296" width="14" height="4" fill="#CBD5E1"></rect>
+        <line x1="150" y1="300" x2="830" y2="300" stroke="#C4CDD9" stroke-width="1.5"></line>
+
+        <text class="b3aB" x="167" y="316" text-anchor="middle">1</text>
+        <text class="b3aB" x="233" y="316" text-anchor="middle">4</text>
+        <text class="b3aB" x="343" y="316" text-anchor="middle">9</text>
+        <text class="b3aB" x="475" y="316" text-anchor="middle">15</text>
+        <text class="b3aB" x="607" y="316" text-anchor="middle">21</text>
+        <text class="b3aB" x="739" y="316" text-anchor="middle">27</text>
+        <text class="b3aB" x="805" y="316" text-anchor="middle">30</text>
+
+        <rect x="14" y="336" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b3aN" x="38" y="348">Night 9: fourteen threshold pages for one outage, one burn-rate page. Same incident, same first hour.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - 35 pages against 5, drawn over the month that produced them.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The budget, and the rate that spends it exactly by night 30<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The budget is <code class="mono">(1 - target) * 720</code> partitions. At 97 percent that is 21.6; at 95 it is 36; at 99 it is 7.2; at 99.9 it is 0.72. Fractions are fine - the budget is a ceiling, not a count of things that happen.</p>
+        <p>The sustainable rate is the budget divided by the hours in the window: <code class="mono">21.6 / 720 = 0.03</code> bad partitions an hour at 97 percent. It is the same as <code class="mono">1 - target</code>, which is a useful sanity check. A pipeline that failed exactly 3 percent of its hours, evenly, would arrive at night 30 with a budget of zero and a promise intact. Nothing fails evenly, which is why the next number exists.</p>
+        <div class="prompt-box good">
+          <span class="label">★ Try it now</span>
+select 0.97                    as target,
+       (1 - 0.97) * 720        as budget_partitions,
+       (1 - 0.97) * 720 / 720  as sustainable_per_hour;
+-- budget_partitions 21.6 · sustainable_per_hour 0.03
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Burn rate: a ratio of rates, and what 1, 3 and 14.4 mean<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Over any window, the burn rate is <code class="mono">(bad partitions in the window / hours in the window) / sustainable_per_hour</code>. It is a rate divided by a rate, so it is unitless, and it reads directly as "how many times faster than the month can afford".</p>
+        <ul>
+          <li><strong>Burn rate 1</strong> - spending at exactly the sustainable rate. The budget is gone at the end of the month and not a moment before. This is the promise kept with nothing left over.</li>
+          <li><strong>Burn rate 3</strong> - three times too fast. 720 hours divided by 3 is 240 hours: the budget would be gone in about ten days if it kept up.</li>
+          <li><strong>Burn rate 14.4</strong> - 720 divided by 14.4 is 50 hours. About two days. This is the rate that means "something is wrong right now", not "the month is drifting".</li>
+        </ul>
+        <p>At 97 percent, one bad partition in a two-hour window is 0.5 an hour, which is <code class="mono">0.5 / 0.03 = 16.7</code> times sustainable. A single bad hour already clears 14.4. That is not a flaw; a pipeline promising 97 percent really is in trouble the hour it starts failing, and the window's job is to say so once.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why page on the rate and not on the partition<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>A rate has an edge; a partition does not.</strong> "Bad partition" is a fact about one hour, and the next hour produces a fresh one. "Burning at 14.4x" is a condition that is true for a stretch and then false, so it has one moment of becoming true. Paging on that moment is paging on the incident.</li>
+          <li><strong>The rate carries the target's meaning.</strong> A threshold page says a partition failed. A burn-rate page says the promise made in session 2 is at risk. The second one tells the on-call how urgent it is; the first one cannot.</li>
+          <li><strong>The rate sees what one hour cannot.</strong> Night 21's connector failed eight times, never two hours in a row. No single hour looked like an outage. Over twelve hours the pipeline was burning at several times the sustainable rate, and only a window that long can see it.</li>
+          <li><strong>Repeats train people to mute.</strong> Thirteen pages saying "still down" are not thirteen pieces of information; they are the reason the fourth page of the next incident gets ignored.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the multi-window policy</span>
+      <h2>Two windows, a rising edge, and a suppression</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">The bench's policy, stated as the bench's own choices: a <strong>fast window of 2 hours</strong> that pages at a burn rate of <strong>14.4 or more</strong>, a <strong>slow window of 12 hours</strong> that pages at <strong>3 or more</strong>, a page on the <strong>rising edge only</strong> - the hour either condition becomes true - and <strong>never twice inside 12 hours</strong>. Those numbers are tunable. What they produce over Harborlight's month is not a matter of taste.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: the first hours of night 9 as cells, two clean then six bad, with a two-hour bracket over the first bad hour showing one of two bad at 16.7 times sustainable, and a page marked at that hour. Right panel: all 24 hours of night 21 with eight scattered bad cells, a twelve-hour bracket showing three of twelve bad at 8.3 times, a page at hour 1, and a twelve-hour suppression bar after it.">
+        <style>
+          .b3bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b3bB { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b3bL { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b3bR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b3bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b3bK { font: 800 10px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <text class="b3bH" x="14" y="24">Night 9 at the 97 target · fast window 2 h, 14.4x</text>
+        <text class="b3bL" x="110" y="66" text-anchor="middle">2 h window: 1 of 2 bad</text>
+        <text class="b3bR" x="110" y="82" text-anchor="middle">0.5 an hour / 0.03 = 16.7x</text>
+        <path d="M70,104 L70,94 L150,94 L150,104" fill="none" stroke="#0F172A" stroke-width="2"></path>
+        <rect x="30" y="110" width="38" height="40" fill="#CBD5E1"></rect>
+        <rect x="70" y="110" width="38" height="40" fill="#CBD5E1"></rect>
+        <rect x="110" y="110" width="38" height="40" fill="#991B1B"></rect>
+        <rect x="150" y="110" width="38" height="40" fill="#991B1B"></rect>
+        <rect x="190" y="110" width="38" height="40" fill="#991B1B"></rect>
+        <rect x="230" y="110" width="38" height="40" fill="#991B1B"></rect>
+        <rect x="270" y="110" width="38" height="40" fill="#991B1B"></rect>
+        <rect x="310" y="110" width="38" height="40" fill="#991B1B"></rect>
+        <text class="b3bB" x="49" y="166" text-anchor="middle">22</text>
+        <text class="b3bB" x="89" y="166" text-anchor="middle">23</text>
+        <text class="b3bB" x="129" y="166" text-anchor="middle">0</text>
+        <text class="b3bB" x="169" y="166" text-anchor="middle">1</text>
+        <text class="b3bB" x="209" y="166" text-anchor="middle">2</text>
+        <text class="b3bB" x="249" y="166" text-anchor="middle">3</text>
+        <text class="b3bB" x="289" y="166" text-anchor="middle">4</text>
+        <text class="b3bB" x="329" y="166" text-anchor="middle">5</text>
+        <line x1="110" y1="106" x2="110" y2="192" stroke="#F59E0B" stroke-width="2"></line>
+        <rect x="110" y="176" width="38" height="18" rx="3" fill="#F59E0B"></rect>
+        <text class="b3bK" x="129" y="189" text-anchor="middle">page</text>
+        <text class="b3bL" x="30" y="222">hour 0: rising edge, one page</text>
+        <text class="b3bB" x="30" y="240">hours 1 to 13: condition stays true, no new edge</text>
+        <text class="b3bB" x="30" y="256">threshold policy: 14 pages for the same hours</text>
+
+        <line x1="430" y1="40" x2="430" y2="270" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+
+        <text class="b3bH" x="460" y="24">Night 21 at the 97 target · slow window 12 h, 3x</text>
+        <text class="b3bL" x="588" y="66" text-anchor="middle">12 h window at hour 13: 3 of 12 bad</text>
+        <text class="b3bR" x="588" y="82" text-anchor="middle">0.25 an hour / 0.03 = 8.3x</text>
+        <path d="M492,104 L492,94 L684,94 L684,104" fill="none" stroke="#0F172A" stroke-width="2"></path>
+        <rect x="460" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="476" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="492" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="508" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="524" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="540" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="556" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="572" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="588" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="604" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="620" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="636" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="652" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="668" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="684" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="700" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="716" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="732" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="748" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="764" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="780" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="796" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <rect x="812" y="110" width="14" height="40" fill="#CBD5E1"></rect>
+        <rect x="828" y="110" width="14" height="40" fill="#991B1B"></rect>
+        <text class="b3bB" x="467" y="166" text-anchor="middle">0</text>
+        <text class="b3bB" x="563" y="166" text-anchor="middle">6</text>
+        <text class="b3bB" x="659" y="166" text-anchor="middle">12</text>
+        <text class="b3bB" x="755" y="166" text-anchor="middle">18</text>
+        <text class="b3bB" x="835" y="166" text-anchor="middle">23</text>
+        <line x1="476" y1="106" x2="476" y2="192" stroke="#F59E0B" stroke-width="2"></line>
+        <rect x="476" y="176" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <line x1="490" y1="183" x2="668" y2="183" stroke="#F59E0B" stroke-width="3"></line>
+        <line x1="668" y1="177" x2="668" y2="189" stroke="#F59E0B" stroke-width="2"></line>
+        <text class="b3bB" x="496" y="204">12 h suppression after the page, hours 2 to 12</text>
+        <text class="b3bL" x="460" y="222">hour 1: fast edge, one page</text>
+        <text class="b3bB" x="460" y="240">hours 4 to 23: slow window keeps the condition true, no new edge</text>
+        <text class="b3bB" x="460" y="256">threshold policy: 8 pages, scattered through the night</text>
+
+        <rect x="14" y="316" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b3bN" x="38" y="328">Fast catches a burst at its first hour. Slow turns a flapping night into one page. Both need the edge.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the fast window on an outage, the slow window on a flapping connector, one page each.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The fast window: night 9 at its first hour<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>At hour 0 of night 9 the source API went down and the partition did not land. The two-hour window now holds one bad partition in two hours: 0.5 an hour, 16.7 times the 97-percent sustainable rate, over the 14.4 line. The condition is true, it was false the hour before, and no page has fired in the last twelve hours. One page, at the first bad hour of the outage.</p>
+        <p>Hours 1 through 13 are also bad, so the condition stays true through all of them. A condition that stays true has no rising edge, so no further pages. When the source came back at hour 14 the window emptied over the next two hours and the condition turned false, ready for the next incident. Under threshold paging the same fourteen hours were fourteen pages.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The slow window: what turns night 21's eight failures into one page<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Night 21's connector failed at hours 1, 4, 7, 11, 14, 18, 21 and 23. Never two in a row. The first failure at hour 1 is a rising edge on the fast window, so the page fires there. The question is what stops seven more pages, and the answer is the slow window, in two parts.</p>
+        <ul>
+          <li><strong>The suppression covers the first stretch.</strong> Hours 4, 7 and 11 are inside twelve hours of the page at hour 1. Even where the fast window sees a fresh edge, the policy will not page twice inside twelve hours.</li>
+          <li><strong>The slow window holds the condition true for the rest.</strong> From hour 4 onward, any twelve-hour lookback holds at least two bad partitions: 2 over 12 hours is 0.17 an hour, 5.6 times sustainable, over the 3 line. So from hour 4 the condition never turns false, which means hours 14, 18, 21 and 23 are not rising edges at all. One night of flapping, one page.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Under threshold paging, night 21 was eight pages spread over twenty-two hours, each one arriving after the previous one had been investigated and closed as a one-off. Nobody saw the pattern until the postmortem laid the hours out in a row. The twelve-hour window is that postmortem, computed live.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The month under both policies<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <table class="clean">
+          <thead><tr><th>Alert policy</th><th>Pages in 30 nights</th><th>Pages per week</th><th>Actionable</th><th>Incidents paged</th></tr></thead>
+          <tbody>
+            <tr><td>No alerting</td><td>0</td><td>0</td><td>-</td><td>0 of 5</td></tr>
+            <tr><td>Page on every bad partition</td><td><strong>35</strong></td><td><strong>8.2</strong></td><td>5, which is <strong>14 percent</strong></td><td>5 of 5</td></tr>
+            <tr><td>Multi-window burn rate</td><td><strong>5</strong></td><td><strong>1.2</strong></td><td>5, which is <strong>100 percent</strong></td><td>5 of 5</td></tr>
+          </tbody>
+        </table>
+        <p>Both policies catch all five incidents. The burn-rate pages land on nights 4, 9, 15, 21 and 27, each at the first bad hour of its incident at the 97 target. The thirty pages that separate the rows are the ones that told the on-call something they already knew: thirteen of them on night 9 alone.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Two honest notes: the numbers are choices, and the target is a different lever<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>2 hours, 12 hours, 14.4x, 3x and 12 hours of suppression are tunable.</strong> They are the bench's own choices, not a law. A shorter fast window pages sooner and risks paging on a single freak hour; a longer slow window catches slower smoulders and takes longer to clear. Change them, rerun the month, and keep whichever set pages once per incident on your own history.</li>
+          <li><strong>The page count does not move when the target does.</strong> Rerun the month at 95, 99 or 99.9 and the burn-rate policy still produces five pages and the threshold policy still produces 35. The target sets the sustainable rate, which shifts exactly which hour a page lands in, but a burst is a burst at any target and the rising edge is still one edge. The target decides the budget; the policy decides the pages. They are separate levers, and tightening the first because the pager is noisy is the most common mistake in the field.</li>
+          <li><strong>Every bad partition weighs the same here.</strong> A corrupt settlement total is worse than a late partition, and a mature budget would weight them. Add that once the unweighted version is running.</li>
+          <li><strong>The suppression is a statement about incidents, not about noise.</strong> Twelve hours says "two rising edges this close are the same incident". If your incidents are shorter than that, shorten it.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Replace threshold paging with a burn-rate policy</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">Use the partition log, the good-event definition from session 1 and the target from session 2. The steps below use 97 percent so the Harborlight numbers in the comments match; substitute your own target and the shape of the query does not change. Bring the incident list from session 1's homework for the last step.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Compute the sustainable per-hour rate for the target.</strong> Budget over 720 hours. At 97 percent: 21.6 partitions, 0.03 an hour. Write it down; every burn rate tonight is divided by it.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute the 2-hour and 12-hour bad counts per partition.</strong> Two window sums over the hourly series, one covering the current hour and the one before, the other the current hour and the eleven before.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute both burn rates.</strong> Bad count over hours in the window, divided by the sustainable rate. The condition is true when the fast rate is at least 14.4 or the slow rate is at least 3, with at least one bad partition in the window.</p>
+      </div>
+      <div class="step">
+        <p><strong>Flag the rising edge and apply the 12-hour suppression.</strong> A rising edge is the condition true now and false the hour before. A page is a rising edge with no page in the previous eleven hours.</p>
+      </div>
+      <div class="step">
+        <p><strong>Count pages and compare with threshold paging.</strong> Threshold pages are the bad partitions themselves. Harborlight: 35 against 5, which is 8.2 a week against 1.2.</p>
+      </div>
+      <div class="step">
+        <p><strong>Count how many of each are the first page inside an incident.</strong> Join pages to the incident table, number them within each incident, and count the ones ranked first. Harborlight: 5 of 35 and 5 of 5.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Steps 2 to 5 · the policy as one query</span>
+with hours as (
+  select partition_hour,
+         case when landed_at &lt;= partition_hour + interval '60 minute'
+                   and reconciled
+                   and row_count &gt;= 0.9 * lag(row_count, 168) over (order by partition_hour)
+              then 0 else 1 end                                                          as bad
+  from ops.orders_partition_log
+  where partition_hour &gt;= dateadd('day', -37, current_timestamp)   -- 30 nights + a week for the lag
+),
+windows as (
+  select partition_hour, bad,
+         sum(bad) over (order by partition_hour rows between 1 preceding and current row)  as bad_2h,
+         sum(bad) over (order by partition_hour rows between 11 preceding and current row) as bad_12h
+  from hours
+),
+rates as (
+  select *,
+         (bad_2h  / 2.0)  / 0.03 as burn_2h,        -- 0.03 = sustainable per hour at 97 percent
+         (bad_12h / 12.0) / 0.03 as burn_12h
+  from windows
+),
+firing as (
+  select *,
+         (bad_2h &gt; 0 and burn_2h &gt;= 14.4) or (bad_12h &gt; 0 and burn_12h &gt;= 3) as condition
+  from rates
+),
+edges as (
+  select *,
+         condition and not coalesce(lag(condition) over (order by partition_hour), false) as rising_edge
+  from firing
+),
+pages as (
+  select *,
+         rising_edge
+           and coalesce(sum(case when rising_edge then 1 else 0 end)
+                          over (order by partition_hour rows between 11 preceding and 1 preceding), 0) = 0 as burn_page
+  from edges
+)
+select count_if(bad = 1)             as threshold_pages,
+       count_if(burn_page)           as burn_pages,
+       count_if(bad = 1) / (30 / 7.0) as threshold_per_week,
+       count_if(burn_page) / (30 / 7.0) as burn_per_week
+from pages
+where partition_hour &gt;= dateadd('day', -30, current_timestamp);
+-- Harborlight: threshold_pages 35, burn_pages 5, threshold_per_week 8.2, burn_per_week 1.2
+-- burn_page is true at night 4 hour 0, night 9 hour 0, night 15 hour 5, night 21 hour 1, night 27 hour 2
+    </div>
+
+    <div class="callout tip">
+      <p><strong>One approximation, named.</strong> The suppression in the <code class="mono">pages</code> step checks for a rising edge in the previous eleven hours rather than for a page, because "since the last page" depends on earlier page decisions and needs a recursive query or a loop to state exactly. On Harborlight's month the two give the same five pages. If your history has two rising edges inside twelve hours where the first was itself suppressed, the exact version pages on the second and this one does not; write the recursive version once that case shows up.</p>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 6 · actionable pages, defined mechanically</span>
+with paged as (
+  select 'every bad partition' as policy, partition_hour from pages where bad = 1
+  union all
+  select 'burn rate'           as policy, partition_hour from pages where burn_page
+),
+ranked as (
+  select p.policy, p.partition_hour, i.incident_id,
+         row_number() over (partition by p.policy, i.incident_id order by p.partition_hour) as rank_in_incident
+  from paged p
+  left join ops.incidents i
+    on p.partition_hour between i.started_at and i.ended_at
+)
+select policy,
+       count(*)                                                       as pages,
+       count_if(incident_id is not null and rank_in_incident = 1)     as actionable,
+       actionable / pages::float                                      as actionable_rate,
+       count(distinct incident_id)                                    as incidents_paged
+from ranked
+group by policy;
+-- every bad partition: pages 35, actionable 5, actionable_rate 0.14, incidents_paged 5
+-- burn rate:           pages 5,  actionable 5, actionable_rate 1.00, incidents_paged 5
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Now change only the target.</strong> Replace 0.03 with 0.05, 0.01 and 0.001 and rerun. The budget changes, the exhaustion night changes, and the page counts stay at 35 and 5. If somebody on the team wants a stricter target because the pager is too noisy, this is the query to show them.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 4</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Run both policies over your own last thirty nights and fill in the two-row table: pages, pages per week, actionable, incidents paged. If burn rate misses an incident that threshold caught, look at the incident's shape before touching the windows; a single bad hour in an otherwise clean day is a question for the target, not the policy.</li>
+      <li>Rerun the burn-rate policy at two other targets. Write down the page count each time. It should not move; if it does, find the incident whose first page changed hour and work out why.</li>
+      <li>Try one alternative pair of windows - say 1 hour at 14.4x and 6 hours at 6x - and count pages again. Keep whichever set pages once per incident on your history, and write the reason in the contract next to the numbers.</li>
+      <li>For each of the five pages, write the first sentence the on-call should read when it arrives. Session 4 turns those sentences into runbooks.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">Harborlight moves the target from 97 to 99 percent and reruns the burn-rate policy over the same month. What happens to the page count?</p>
+      <button class="qopt" type="button">A · It rises, because a stricter target makes more hours count as burning</button>
+      <button class="qopt" type="button">B · It falls, because the tighter budget is exhausted sooner and paging stops</button>
+      <button class="qopt" type="button">C · It stays at five: the target sets the budget and the sustainable rate, but a burst is a burst at any target and each incident still has one rising edge, so the policy decides the pages</button>
+      <p class="qwhy">Threshold paging stays at 35 and burn rate stays at 5 across all four targets. What moves is the exhaustion night: 15 at 97, 9 at 99. Tightening the target because the pager is noisy pulls the wrong lever.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Night 21's connector failed at hours 1, 4, 7, 11, 14, 18, 21 and 23, never two in a row. Why does the burn-rate policy page once rather than eight times?</p>
+      <button class="qopt" type="button">A · The first failure is a rising edge; the 12-hour suppression covers the next three, and from hour 4 the 12-hour window always holds at least two bad partitions, so the condition never turns false and there is no new edge</button>
+      <button class="qopt" type="button">B · The fast window ignores failures that are more than two hours apart</button>
+      <button class="qopt" type="button">C · Flapping failures do not count against the error budget</button>
+      <p class="qwhy">Two bad partitions in twelve hours is 5.6 times the 97-percent sustainable rate, over the 3 line. The slow window is what sees a scattered night as one incident.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">A burn rate of 14.4 over the fast window means what, at any target?</p>
+      <button class="qopt" type="button">A · 14.4 bad partitions have landed in the window</button>
+      <button class="qopt" type="button">B · The budget is being spent 14.4 times faster than the rate that would last the month, so at that pace it is gone in about two days</button>
+      <button class="qopt" type="button">C · 14.4 percent of the budget has been used</button>
+      <p class="qwhy">Burn rate is a ratio of rates: actual spending per hour over sustainable spending per hour. 720 hours divided by 14.4 is 50 hours. At 97 percent, one bad partition in two hours already reads 16.7.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE workbook, Implementing SLOs - error budget as 100 percent minus the SLO</span>
+        <span class="note">Computed in partitions at four targets, then spread over 720 hours to get the sustainable rate every burn rate is measured against.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book, Service Level Objectives - the error budget as a rate at which the SLO can be missed</span>
+        <span class="note">Burn rate is that rate, normalised to 1 for the pace that exactly lasts the month.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Multi-window burn-rate alerting against threshold alerting</span>
+        <span class="note">Established practice: a fast and a slow window, page on either. The 2 h at 14.4x, 12 h at 3x, rising edge and 12 h suppression are the bench's own choices, stated as such, and both policies are computed over the same month.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">A derivation of the window sizes and multipliers</span>
+        <span class="note">Not covered by design. The windows are presented as tunable choices with the homework to rerun them; the dedicated alerting literature is not quoted.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">What the on-call does when the page arrives</span>
+        <span class="note">Session 4. Tonight ends at the page and its first sentence.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. That is the AI observability course; this track is tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 3 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Budget = (1 - target) x 720</b><span>21.6 partitions at 97. A ceiling, so fractions are fine.</span></div>
+      <div class="cheat-item"><b>Sustainable rate = budget / 720 h</b><span>0.03 an hour at 97. Equal to 1 minus the target.</span></div>
+      <div class="cheat-item"><b>Burn rate = spent per hour / sustainable</b><span>1 lasts the month. 3 is gone in ten days. 14.4 is gone in two.</span></div>
+      <div class="cheat-item"><b>Two windows</b><span>2 h at 14.4x catches a burst. 12 h at 3x catches a flapping night.</span></div>
+      <div class="cheat-item"><b>Rising edge only</b><span>Page the hour the condition turns true. A condition that stays true has no edge.</span></div>
+      <div class="cheat-item"><b>Never twice in 12 h</b><span>Two edges that close are one incident.</span></div>
+      <div class="cheat-item"><b>35 or 5</b><span>Same five incidents. 8.2 a week and 14 percent useful, or 1.2 a week and 100 percent.</span></div>
+      <div class="cheat-item"><b>Separate levers</b><span>The target decides the budget. The policy decides the pages. Neither moves the other.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 3 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b2-slos-from-history.html">← Builder session 2 · SLOs from history</a>
+      <a href="b4-runbooks.html">Builder session 4 · Runbooks a tired person can follow →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

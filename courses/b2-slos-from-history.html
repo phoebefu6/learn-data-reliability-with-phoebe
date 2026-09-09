@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 2 of 8. Setting an SLO target from thirty nights of history rather than from a meeting: rolling windows, the nightly distribution, the four candidate targets and the night each one runs out of budget. Harborlight achieved 95.14 percent; 99.9 is the p50 night promised for every night, and it is gone on night 4.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="SLOs from history, not hope - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 2 of 8. Read the history, pick below the typical month, tighten later. 95 keeps 3 percent; 99.9 is gone on night 4.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b2-slos-from-history.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SLOs from history, not hope - learn data reliability with phoebe">
+<meta name="twitter:description" content="Four candidate targets, one month of history, and the night each promise breaks.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 2 · SLOs from history, not hope - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 2 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 2 of 8</div>
+    <h1>SLOs from <span class="accent">history</span>, not hope</h1>
+    <p class="sub">Session 1 ended with one honest number: Harborlight's orders pipeline landed 685 of 720 partitions good last month, 95.14 percent. Tonight that number becomes a promise. The service-reliability literature is blunt about how: read the history, pick a target you can keep without heroics, and tighten it later when you have earned the right. Four candidates are on the table - 95, 97, 99 and 99.9 - and the same thirty nights tell you exactly which night each one would have broken. Only one survives to night 30.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · Reading the history before writing the target</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: set one target</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where tonight sits in the builder track</h2>
+    </div>
+    <p class="lede">Eight sessions, one artifact: a <strong>reliability contract</strong> for one pipeline. Session 1 produced the indicator and the number. Tonight produces the <strong>target</strong> - the line in the contract that says how much failure the reader has agreed to absorb - and the date on which it may move. Session 3 turns the gap between target and history into an error budget and pages on how fast it burns. Nothing tonight requires more than the partition log you already have and a window function.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A target for one pipeline that the last thirty nights actually support, written with its window and its review date. The arithmetic that shows what each candidate target would have done to last month - 95 percent ends the month with 3 percent of budget left, 97 is exhausted on night 15, 99 on night 9, 99.9 on night 4. And a clear view of the trap most teams walk into: promising the typical night for every night.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the target is the second decision, never the first<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>An SLO is a target value for an SLI. That definition has an order in it: the indicator exists first, and the target is a value on its scale. A team that sets "99 percent" before it has an indicator has set a target on nothing, and the first thing the indicator does when it arrives is embarrass the target.</p>
+        <p>Harborlight had lived with "basically 99" for a year. The number came from a meeting, not a query, and the settlement team had planned around it: a manual check on the report at 7 am, no contingency for a late one. When the measured month came in at 95.14, the target was not merely wrong; a downstream team had built a morning around it. That is what a target does. People plan on it. So it has to be a number the pipeline can keep.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The first draft of Harborlight's contract said 99 percent because "that is what the other pipelines promise". None of the other pipelines had been measured either. When all four were run through the same partition-log query, two were under 97 and one was at 91. The 99 had been copied from pipeline to pipeline for two years without a single measurement behind it.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary tonight adds<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Target</strong> - the value of the SLI the reader has agreed is good enough, over a stated window. "95 percent of hourly partitions good over any rolling 30 days."</li>
+          <li><strong>Achieved</strong> - what the SLI actually returned over the same window. Harborlight: 95.14 percent. The target is chosen against this, and below it.</li>
+          <li><strong>Error budget</strong> - one hundred percent minus the target, in events. At 95 percent over 720 partitions that is 36 bad partitions; at 99.9 it is 0.72. Session 3 spends it hour by hour; tonight it only decides which night the budget runs out.</li>
+          <li><strong>Exhaustion night</strong> - the first night the cumulative count of bad partitions exceeds the budget. From that night on, the promise is broken regardless of what happens next.</li>
+          <li><strong>The p50 night</strong> - the median night's compliance. At Harborlight the median night is clean, 24 of 24. Promising that for every night is the 99.9 trap.</li>
+          <li><strong>Review date</strong> - the date the target is allowed to change. A target without one either never moves or moves in every argument.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers choosing the target</span>
+      <h2>The history already knows the answer</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">The service-reliability guidance on picking a target is short and every line of it is about restraint: <em>don't pick based on current performance</em>, <em>keep it simple</em>, <em>avoid absolutes</em>, <em>have as few SLOs as possible</em>, <em>perfection can wait</em>. The apparent contradiction - do not pick from current performance, yet read the history - resolves the moment you see what each is guarding against.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cumulative bad partitions over thirty nights as a stepped curve: 3 after night 4, 17 after night 9, 23 after night 15, 31 after night 21, 35 after night 27. Four horizontal budget lines at 36, 21.6, 7.2 and 0.72 bad partitions for targets of 95, 97, 99 and 99.9 percent. The curve crosses 0.72 on night 4, 7.2 on night 9 and 21.6 on night 15, and ends one partition under 36.">
+        <style>
+          .b2aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b2aB { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b2aL { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b2aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b2aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <text class="b2aH" x="60" y="26">Cumulative bad partitions, thirty nights, against four budgets</text>
+
+        <line x1="60" y1="300" x2="790" y2="300" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="60" y1="60" x2="60" y2="300" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <text class="b2aB" x="30" y="304">0</text>
+        <text class="b2aB" x="24" y="184">20</text>
+        <text class="b2aB" x="24" y="64">40</text>
+        <text class="b2aB" x="60" y="318">night 1</text>
+        <text class="b2aB" x="135" y="318" text-anchor="middle">4</text>
+        <text class="b2aB" x="260" y="318" text-anchor="middle">9</text>
+        <text class="b2aB" x="410" y="318" text-anchor="middle">15</text>
+        <text class="b2aB" x="560" y="318" text-anchor="middle">21</text>
+        <text class="b2aB" x="710" y="318" text-anchor="middle">27</text>
+        <text class="b2aB" x="785" y="318" text-anchor="middle">30</text>
+
+        <line x1="60" y1="84" x2="790" y2="84" stroke="#1E293B" stroke-width="1.5" stroke-dasharray="5 4"></line>
+        <text class="b2aL" x="798" y="88">95% · 36</text>
+        <line x1="60" y1="170" x2="790" y2="170" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5 4"></line>
+        <text class="b2aL" x="798" y="174">97% · 21.6</text>
+        <line x1="60" y1="257" x2="790" y2="257" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5 4"></line>
+        <text class="b2aL" x="798" y="261">99% · 7.2</text>
+        <line x1="60" y1="296" x2="790" y2="296" stroke="#991B1B" stroke-width="1.5" stroke-dasharray="5 4"></line>
+        <text class="b2aR" x="794" y="292">99.9% · 0.72</text>
+
+        <polyline points="60,300 135,300 135,282 260,282 260,198 410,198 410,162 560,162 560,114 710,114 710,90 785,90" fill="none" stroke="#0F172A" stroke-width="2.5"></polyline>
+
+        <circle cx="135" cy="290" r="6" fill="#991B1B"></circle>
+        <text class="b2aR" x="146" y="278">night 4: 3 bad, 99.9 gone</text>
+        <circle cx="260" cy="240" r="6" fill="#991B1B"></circle>
+        <text class="b2aR" x="272" y="232">night 9: 17 bad, 99 gone</text>
+        <circle cx="410" cy="180" r="6" fill="#991B1B"></circle>
+        <text class="b2aR" x="422" y="184">night 15: 23 bad, 97 gone</text>
+        <text class="b2aN" x="574" y="106">night 21: 31</text>
+        <text class="b2aN" x="700" y="80" text-anchor="end">night 27: 35, one under 36</text>
+
+        <rect x="60" y="336" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b2aN" x="84" y="348">The curve is the same for every target. Only the line it has to stay under moves.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - one month of bad partitions against four budgets, and the night each one is crossed.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What the guidance actually says, line by line<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>"Don't pick based on current performance."</strong> The warning is against locking in a heroic month. If the pipeline hit 99.6 last month because two engineers babysat it through a migration, 99.6 is not what the pipeline delivers; it is what the two engineers delivered, and they will not do it every month.</li>
+          <li><strong>"Keep it simple."</strong> One target, one window, one indicator. A target with a weekday clause, a holiday exemption and a separate number for the last hour of the day is a target nobody can hold in their head, which means nobody can plan around it.</li>
+          <li><strong>"Avoid absolutes."</strong> 100 percent is not a target; it is a wish. It leaves no budget at all, so the first bad partition of the month is a broken promise and every night after it is indistinguishable from the last.</li>
+          <li><strong>"Have as few SLOs as possible."</strong> Each one is a promise somebody has to check, report and defend. Three that matter beat twelve that get ignored.</li>
+          <li><strong>"Perfection can wait."</strong> The full phrasing is that it is <em>better to start with a loose target that you tighten</em>. A loose target kept teaches the reader to trust the number; a tight one broken teaches them to ignore it.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The contradiction that is not one<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Do not pick from current performance" and "read the history before you write the target" sound opposed. They are two halves of one rule. The history tells you what the pipeline achieves <em>without heroics</em>: the typical month, the bad month, the spread between them. Current performance, in the sense the guidance warns against, is the best recent number. You read the history to find the typical month, and you set the target <strong>below</strong> it, not at the best one.</p>
+        <p>Harborlight's typical month is around 95 to 96 percent. Its best recent month was the migration month at 99.6. Its best recent <em>night</em> is 24 of 24, and 25 of the last 30 nights look like that. The target that the guidance points to is under 95.14: a number the pipeline clears in an ordinary month with nobody staying late. The numbers it warns against are 99.6 and 99.9.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The settlement team's first reaction to "95 percent" was that it sounded low. The reply that landed: at 95 percent, last month would have been a kept promise with one partition to spare. At 99, the promise would have been broken on night 9 and every settlement report from night 10 onward would have been produced under a contract already in default. They chose the promise that would have been kept.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The four candidates and what each does to the month<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Same thirty nights, same 35 bad partitions clustered in five incidents. The only thing that changes across the rows is the budget, which is one hundred percent minus the target, times 720.</p>
+        <table class="clean">
+          <thead><tr><th>Target</th><th>Budget (bad partitions allowed)</th><th>Budget left at night 30</th><th>Exhausted on night</th></tr></thead>
+          <tbody>
+            <tr><td>95 percent</td><td>36</td><td><strong>3 percent</strong></td><td>never</td></tr>
+            <tr><td>97 percent</td><td>21.6</td><td>0</td><td><strong>15</strong></td></tr>
+            <tr><td>99 percent</td><td>7.2</td><td>0</td><td><strong>9</strong></td></tr>
+            <tr><td>99.9 percent, the p50 night promised every night</td><td>0.72</td><td>0</td><td><strong>4</strong></td></tr>
+          </tbody>
+        </table>
+        <ul>
+          <li><strong>95 percent</strong> survives the month by one partition. That is real headroom, but thin: one more bad hour on night 27 and it breaks on night 27 instead.</li>
+          <li><strong>97 percent</strong> survives the late load and the outage and dies on the corrupt batch. Night 15's six bad partitions take the count from 17 to 23 against a budget of 21.6.</li>
+          <li><strong>99 percent</strong> allows 7.2 bad partitions. The outage on night 9 alone is 14. The promise does not survive a single incident of that shape.</li>
+          <li><strong>99.9 percent</strong> allows 0.72 of a partition. Less than one. The three late partitions on night 4 are four times the whole month's budget.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the loose-then-tighten path</span>
+      <h2>The 99.9 trap, and what a loose target buys</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">99.9 percent is the most common wrong answer, and it is wrong for an interesting reason: on most nights it is true. Twenty-five of Harborlight's last thirty nights landed all 24 partitions. Anyone looking at a dashboard of nightly compliance sees a wall of clean nights and a number that starts with 99. The month is not made of the median night.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Thirty nights of compliance sorted from best to worst: twenty-five bars at 100 percent, then 87.5, 83.3, 75, 66.7 and 41.7 percent for nights 4, 27, 15, 21 and 9. The median bar is clean and marked as the 99.9 trap. A horizontal line at 95.14 marks the month achieved, with the 95 percent target just below it.">
+        <style>
+          .b2bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b2bB { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b2bL { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b2bR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b2bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <text class="b2bH" x="60" y="26">Nightly compliance, sorted best to worst</text>
+
+        <line x1="60" y1="260" x2="790" y2="260" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="60" y1="60" x2="60" y2="260" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <text class="b2bB" x="30" y="64">100</text>
+        <text class="b2bB" x="36" y="164">70</text>
+        <text class="b2bB" x="36" y="264">40</text>
+
+        <rect x="60" y="60" width="592" height="200" fill="#1E293B"></rect>
+        <text class="b2bB" x="66" y="48">25 of 30 nights land all 24 partitions</text>
+
+        <rect x="660" y="102" width="16" height="158" fill="#94A3B8"></rect>
+        <rect x="684" y="116" width="16" height="144" fill="#94A3B8"></rect>
+        <rect x="708" y="143" width="16" height="117" fill="#94A3B8"></rect>
+        <rect x="732" y="171" width="16" height="89" fill="#94A3B8"></rect>
+        <rect x="756" y="254" width="16" height="6" fill="#991B1B"></rect>
+
+        <text class="b2bB" x="668" y="274" text-anchor="middle">n4</text>
+        <text class="b2bB" x="692" y="274" text-anchor="middle">n27</text>
+        <text class="b2bB" x="716" y="274" text-anchor="middle">n15</text>
+        <text class="b2bB" x="740" y="274" text-anchor="middle">n21</text>
+        <text class="b2bB" x="764" y="274" text-anchor="middle">n9</text>
+        <text class="b2bB" x="668" y="96" text-anchor="middle">87.5</text>
+        <text class="b2bB" x="692" y="110" text-anchor="middle">83.3</text>
+        <text class="b2bB" x="716" y="137" text-anchor="middle">75</text>
+        <text class="b2bB" x="740" y="165" text-anchor="middle">66.7</text>
+        <text class="b2bR" x="764" y="248" text-anchor="middle">41.7</text>
+
+        <line x1="60" y1="76" x2="790" y2="76" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6 4"></line>
+        <text class="b2bL" x="798" y="72">month 95.14</text>
+        <text class="b2bL" x="798" y="88">target 95</text>
+
+        <line x1="404" y1="60" x2="404" y2="260" stroke="#F59E0B" stroke-width="2"></line>
+        <rect x="346" y="178" width="116" height="20" rx="4" fill="#F59E0B"></rect>
+        <text class="b2bL" x="404" y="192" text-anchor="middle">p50 night: 24/24</text>
+        <rect x="290" y="206" width="228" height="42" rx="4" fill="#F1F5F9"></rect>
+        <text class="b2bR" x="404" y="223" text-anchor="middle">promised for every night = 99.9</text>
+        <text class="b2bR" x="404" y="240" text-anchor="middle">budget 0.72, gone on night 4</text>
+
+        <rect x="60" y="314" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b2bN" x="84" y="326">The month is the area under all thirty bars, not the height of the middle one.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the median night is clean, the month is 95.14, and the honest target sits just under the month.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why 99.9 looks reasonable in a meeting and fails as a monthly promise<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>In the meeting, someone has the nightly dashboard open. Twenty-five green nights out of thirty. The median night is perfect. "We are basically at three nines" is a true statement about the typical night and a false statement about the month, and the room hears the second one.</p>
+        <p>As a monthly promise, 99.9 percent of 720 partitions allows 0.72 bad partitions. That is not one bad partition; it is less than one. The first incident of any size breaks it, and Harborlight's first incident was the smallest of the five: three late partitions on night 4, four times the month's entire budget. From night 4 to night 30 the pipeline is in breach, and the 26 clean nights that follow do nothing to change that, because a broken promise does not heal.</p>
+        <div class="callout tip">
+          <p><strong>The tell.</strong> If the proposed target is higher than the achieved number for the month, somebody is reading the median night. Harborlight's month is 95.14. Anything above that is a promise the last thirty nights already broke.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What a loose target buys the reader<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A 95 percent promise the pipeline keeps is worth more to the settlement team than a 99 percent promise it breaks on night 9. That sounds backwards until you ask what the reader does with the number. They plan around it. A kept 95 tells them: expect roughly one bad partition in twenty, build the morning check to tolerate it, and trust the report the rest of the time. A broken 99 tells them nothing, because from night 10 the contract is in default and every report after it carries the same asterisk.</p>
+        <ul>
+          <li><strong>Kept promises compound.</strong> Three months of a kept 95 and the reader stops re-checking the report by hand. Three months of a broken 99 and they build a shadow process.</li>
+          <li><strong>Budget is a currency only while there is some.</strong> At 95, there is budget left on night 30 to decide whether a risky backfill can run tonight. At 99, that decision was taken away on night 9.</li>
+          <li><strong>A loose target is not a low bar.</strong> It is the bar the history clears. 95 percent still means 36 bad partitions a month is the ceiling, and last month used 35 of them.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Tightening is earned at the quarterly review<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The target moves on a date, not in an argument. Harborlight's contract names the first day of the next quarter, and it names what has to be true by then for 95 to become 97: the coverage check from session 1 in production for the whole quarter, and the connector retry that the night 21 postmortem asked for, shipped and observed through at least one flapping night.</p>
+        <ul>
+          <li><strong>Tighten after the fix, not before it.</strong> A tighter target does not make the pipeline more reliable; the fix does. The target follows the evidence that the fix worked.</li>
+          <li><strong>One step at a time.</strong> 95 to 97 is a budget of 36 falling to 21.6. Going to 99 in one move is a budget of 7.2, which last month's outage alone would have doubled.</li>
+          <li><strong>Loosening is allowed too.</strong> If a quarter's history says the pipeline no longer clears the target without heroics, the honest move is down, with the reason written in the contract. A target that only ever tightens is a target that will eventually be ignored.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Rolling thirty days, not the calendar month<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The window in the contract is <em>any rolling 30 days</em>, and the query computes it for every night. A calendar month does something worse than being imprecise: it resets the budget at midnight on the first. Everybody learns that the safest time to ship a risky change is the second of the month, when the budget is full and the consequences of spending it are four weeks away. A rolling window has no such day. The budget you spend on the second is still gone on the twentieth.</p>
+        <p>If the platform you inherit reports SLO compliance by calendar month, the target line can stay, but the review conversation needs a one-line note: the calendar number and the rolling number will differ, and the rolling one is the honest one.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Set one target from your own history</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">Use the partition log and the combined good-event definition from session 1. Ninety days of history is comfortable; thirty is the minimum. The Harborlight answers are in the comments so you can check your arithmetic as you go.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Compute the achieved SLI per rolling 30-day window over the last 90 days.</strong> Aggregate to nights first, then a window function sums good and total over the current night and the 29 before it. You get 90 numbers; the spread between them is the honest picture of what the pipeline delivers.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute the distribution of nightly compliance and look at the p50 night.</strong> This is the trap made visible: the median night is clean while the month is 95.14. Also take the worst night. Night 9 landed 10 of 24, and any target that cannot absorb a night like that is a target the history has already broken.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute the budget in partitions at 95, 97, 99 and 99.9.</strong> One hundred percent minus the target, times the events in the window. Notice that 99.9 gives less than one partition.</p>
+      </div>
+      <div class="step">
+        <p><strong>For each target, find the night the cumulative bad count first exceeds the budget.</strong> A running sum over nights and a filter for the first crossing. The nights that come back - never, 15, 9, 4 - are the whole argument for the target you are about to write.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the target you would sign, and the quarterly date it may move.</strong> Below the typical month, above the worst month you would tolerate, with the window stated and the conditions for tightening named. Then read it to the person who signs the report.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 1 · rolling 30-day SLI, one row per night</span>
+with events as (
+  select partition_hour,
+         date_trunc('day', partition_hour)                                          as night,
+         landed_at &lt;= partition_hour + interval '60 minute'
+           and reconciled
+           and row_count &gt;= 0.9 * lag(row_count, 168) over (order by partition_hour) as good
+  from ops.orders_partition_log
+  where partition_hour &gt;= dateadd('day', -127, current_timestamp)   -- 90 nights + 30 for the first window + 7 for the lag
+),
+nightly as (
+  select night, count(*) as total, count_if(good) as good
+  from events
+  group by night
+)
+select night,
+       sum(good)  over (order by night rows between 29 preceding and current row) as good_30d,
+       sum(total) over (order by night rows between 29 preceding and current row) as total_30d,
+       good_30d / total_30d::float                                                as rolling_sli
+from nightly
+where night &gt;= dateadd('day', -90, current_date)
+order by night;
+-- Harborlight, the window ending tonight: good_30d 685, total_30d 720, rolling_sli 0.9514
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 2 · the nightly distribution and the p50 night</span>
+select percentile_cont(0.5) within group (order by good / total::float) as p50_night,
+       min(good / total::float)                                         as worst_night,
+       sum(good) / sum(total)::float                                    as the_month
+from nightly
+where night &gt;= dateadd('day', -30, current_date);
+-- Harborlight: p50_night 1.0000 (24 of 24), worst_night 0.4167 (night 9, 10 of 24), the_month 0.9514
+-- The p50 night clears 99.9. The month does not clear 96.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 3 · the budget in partitions</span>
+select target,
+       (1 - target) * 720 as budget_partitions
+from (values (0.95), (0.97), (0.99), (0.999)) as t(target);
+-- 0.95 -&gt; 36 · 0.97 -&gt; 21.6 · 0.99 -&gt; 7.2 · 0.999 -&gt; 0.72
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 4 · the night each budget is first exceeded</span>
+with running as (
+  select night,
+         total - good                             as bad,
+         sum(total - good) over (order by night)  as cum_bad
+  from nightly
+  where night &gt;= dateadd('day', -30, current_date)
+),
+targets as (
+  select * from (values (0.95), (0.97), (0.99), (0.999)) as t(target)
+)
+select t.target,
+       (1 - t.target) * 720                                                   as budget,
+       min(r.night) filter (where r.cum_bad &gt; (1 - t.target) * 720)           as exhausted_on,
+       greatest(0, (1 - t.target) * 720 - max(r.cum_bad)) / ((1 - t.target) * 720) as budget_left
+from targets t
+cross join running r
+group by t.target
+order by t.target;
+-- 0.95   budget 36    exhausted_on null      budget_left 0.028  (3 percent, one partition)
+-- 0.97   budget 21.6  exhausted_on night 15  budget_left 0
+-- 0.99   budget 7.2   exhausted_on night 9   budget_left 0
+-- 0.999  budget 0.72  exhausted_on night 4   budget_left 0
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 5 · the line in the contract</span>
+insert into ops.slo_contract (pipeline, indicator, target, window_days, signed_on, review_on, note)
+values ('orders',
+        'partition fresh within 60 min, reconciled, all shards',
+        0.95, 30, current_date, dateadd('month', 3, current_date),
+        'history supports 95.14; move to 0.97 once the coverage check has run a quarter and the connector retry is in');
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Do not write the alert tonight.</strong> The target decides the budget; the alert policy decides the pages, and they are separate levers. Session 3 spends this budget hour by hour and shows that the page count does not move when the target does.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 3</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Run the rolling 30-day query over your own 90 days and write down three numbers: the best window, the worst window and the median. The target goes below the median, and the gap to the worst is the risk you are accepting.</li>
+      <li>Compute the exhaustion night for your four candidates against your own last thirty nights. If none of them survives to night 30, the loose target is looser than you thought, and that is the finding.</li>
+      <li>Write the contract line, including the review date and the two conditions for tightening. Read it to the person who signs the report and note what they push back on.</li>
+      <li>Bring the incident list from session 1's homework. Session 3 pages on it, and the number of pages depends on how the bad partitions cluster, not on how many there are.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Twenty-five of Harborlight's last thirty nights landed all 24 partitions, so the median night is at or above 99.9 percent. Why is 99.9 percent the wrong monthly target?</p>
+      <button class="qopt" type="button">A · Because three nines is only meaningful for request-driven services</button>
+      <button class="qopt" type="button">B · Because it is the typical night promised for every night: the budget is 0.72 of a partition, and the three late partitions on night 4 exhaust it, so the month is in breach from night 4 onward</button>
+      <button class="qopt" type="button">C · Because a rolling window cannot compute a target above 99 percent</button>
+      <p class="qwhy">The month is the area under all thirty bars, not the height of the middle one. The month achieved 95.14; any target above that is a promise the last thirty nights already broke.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">"Don't pick based on current performance" and "read the history before you write the target" appear to contradict each other. How do they fit together?</p>
+      <button class="qopt" type="button">A · They do not; pick whichever the team prefers</button>
+      <button class="qopt" type="button">B · Read the history only after the target is set, to check it</button>
+      <button class="qopt" type="button">C · The history tells you what the pipeline achieves without heroics; the warning is against locking in the best month, so the target is set below the typical month, not at the best one</button>
+      <p class="qwhy">Harborlight's best recent month was 99.6 during a babysat migration. Its typical month is around 95 to 96. The guidance points at a target under 95.14 and warns against 99.6.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Why is a 95 percent promise the pipeline keeps worth more to the settlement team than a 99 percent promise it breaks on night 9?</p>
+      <button class="qopt" type="button">A · Because the reader plans around a kept promise, while a contract in default from night 10 tells them nothing about any report after it</button>
+      <button class="qopt" type="button">B · Because 95 percent is easier to compute</button>
+      <button class="qopt" type="button">C · Because a lower target produces fewer pages</button>
+      <p class="qwhy">A kept 95 lets the reader build a morning check that tolerates one bad partition in twenty. A broken 99 sends them to build a shadow process. And the page count is set by the alert policy, not the target.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book, Service Level Objectives - choosing the target</span>
+        <span class="note">Don't pick based on current performance, keep it simple, avoid absolutes, as few SLOs as possible, perfection can wait: start loose and tighten. Each applied to the 95 / 97 / 99 / 99.9 candidates.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE workbook, Implementing SLOs - error budget as 100 percent minus the SLO</span>
+        <span class="note">Computed in partitions at four targets over 720 events, with the exhaustion night for each from the frozen month.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Percentiles of history as the input to a target</span>
+        <span class="note">Rolling 30-day windows over 90 days, the nightly distribution, and why the p50 night is the trap rather than the answer.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Spending the budget hour by hour, and paging on burn rate</span>
+        <span class="note">Session 3. Tonight the budget only decides which night the promise breaks.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Weighting bad partitions by impact</span>
+        <span class="note">Every bad partition counts the same here. A corrupt total is worse than a late one, and a mature budget knows it; session 8 names it as the first extension.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">How a bad partition is detected</span>
+        <span class="note">Not covered by design. The data observability course owns detection; here a bad partition only has to be counted.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 2 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Indicator first, target second</b><span>A target set before the indicator exists is a target on nothing.</span></div>
+      <div class="cheat-item"><b>Below the typical month</b><span>Read the history for what the pipeline does without heroics; set the target under it, never at the best month.</span></div>
+      <div class="cheat-item"><b>Budget = (1 - target) x 720</b><span>36 at 95, 21.6 at 97, 7.2 at 99, 0.72 at 99.9.</span></div>
+      <div class="cheat-item"><b>Exhaustion nights</b><span>95 never, 97 on night 15, 99 on night 9, 99.9 on night 4. Same curve, different line.</span></div>
+      <div class="cheat-item"><b>The 99.9 trap</b><span>The p50 night promised for every night. Less than one bad partition allowed; the first incident breaks it.</span></div>
+      <div class="cheat-item"><b>Kept beats tight</b><span>A kept 95 lets the reader plan. A 99 broken on night 9 tells them nothing after.</span></div>
+      <div class="cheat-item"><b>Tighten on a date</b><span>Quarterly review, after the fix has run a quarter. One step at a time, 95 to 97.</span></div>
+      <div class="cheat-item"><b>Rolling, not calendar</b><span>A calendar month resets on the first and teaches everybody to ship on the second.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 2 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b1-slis-for-one-pipeline.html">← Builder session 1 · SLIs for one pipeline</a>
+      <a href="b3-burn-rate-alerts.html">Builder session 3 · Error-budget arithmetic and burn-rate alerts →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

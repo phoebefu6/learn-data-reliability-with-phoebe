@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 7 of 8. Toil is manual, repetitive, automatable work that grows with the number of pipelines rather than with the business. Measuring a month of it at Harborlight: 30 repeat pages, three backfills by hand, a query copied from a wiki, a weekly check that the export ran. A toil budget agreed like an error budget, and the rule for what to automate first.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Toil: measuring and buying it down - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 7 of 8. The number that predicts whether the rota survives, measured honestly from the on-call log.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b7-toil.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Toil: measuring and buying it down - learn data reliability with phoebe">
+<meta name="twitter:description" content="Frequency times duration decides what to automate first. At Harborlight that was 30 repeat pages, already gone.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 7 · Toil: measuring and buying it down - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 7 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 7 of 8</div>
+    <h1>Toil: measuring and <span class="accent">buying it down</span></h1>
+    <p class="sub">The error budget says how much failure the pipeline is allowed. Toil says how much of the team's week the pipeline is allowed to eat. A rota can survive a bad month of incidents; it cannot survive a good year of toil, because a team spending most of its week acknowledging repeat pages and re-running backfills by hand has no hours left to remove either. Tonight the toil of Harborlight's last month is counted honestly, item by item, ranked by frequency times duration, and the first two items on the list turn out to be the ones sessions 3 and 5 already removed.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Hardest</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip audience">Whoever approves the sprint</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · What counts as toil, and what does not</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: measure a month of it</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 7 sits</h2>
+    </div>
+    <p class="lede">The contract has a target, a budget, alerts, a runbook, a backfill and an incident package. Session 7 adds the third number the leader report carries: hours of toil per person per week, next to budget remaining and pages per week. Session 8 then replays the month on the bench and shows what the alert policy did to the first two of those numbers. Toil is the one that decides whether anybody is still on the rota in a year.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A six-property test that tells toil from overhead and from engineering, so the same task is classified the same way by everyone on the team. Last month's toil at Harborlight as a number: 35.1 hours, 4.1 per person per week on a rota of two. A toil budget agreed the way an error budget is. And the ordering rule that says the repeat pages go first, then the manual backfills, which is exactly what burn-rate alerting and the idempotent job already did.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why toil is the number that predicts whether the rota survives<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Incidents are visible. Everybody remembers night 9. Toil is invisible because it arrives in twenty-minute pieces: a page acknowledged, a query pasted, a backfill started and watched. None of the pieces is worth a ticket, so none is counted, and a team can lose two days a week to work nobody would list if asked. The consequence is circular. The team that has the most toil has the least time to remove it, so toil grows until somebody leaves, and the person who leaves is the one who carried the most of it.</p>
+        <p>Measuring toil breaks the circle by making it a number that can be over budget. Once it is over budget, removing it is not a favour the team asks for; it is the contract.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's two on-call engineers each believed toil took "an hour or two a week". The on-call log and the ticket queue said 35.1 hours in the month, which is 4.1 hours per person per week, with 15 of the 35.1 spent acknowledging the 30 threshold pages that only repeated what the first page of each incident had already said. Nobody had lied; nobody had counted.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Three kinds of work, and why the boundary matters<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Toil</strong> - operational work that is manual, repetitive, automatable, reactive, leaves nothing lasting behind, and grows with the number of pipelines. Acknowledging the thirteenth repeat page of night 9's outage.</li>
+          <li><strong>Overhead</strong> - work that keeps the team running and is not tied to the pipeline: standups, planning, reviews, hiring. Necessary, not toil, and not counted against the toil budget, because automating a standup is not the fix for a heavy rota.</li>
+          <li><strong>Engineering</strong> - work that removes toil or adds lasting value: the burn-rate alert that replaced 35 pages with 5, the idempotent backfill job, the runbook rewrite. Manual, yes; repetitive, no.</li>
+        </ul>
+        <p>The boundary matters because a team that logs its runbook rewrite as toil will report a toil number that goes up in the month it fixes things, and a team that logs its repeat pages as "monitoring" will report a toil number of zero while drowning.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the definition of toil</span>
+      <h2>Toil is manual, repetitive, automatable, and grows with the estate</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">Toil is defined by its properties, not by how unpleasant it feels. A task is toil when all six hold at once. One or two is not enough: engineering is manual too, and a standup is repetitive.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A checklist of six toil properties, manual, repetitive, automatable, reactive, no lasting value, scales with the number of pipelines, scored against three sample tasks. Acknowledging a repeat page and running a backfill by hand score yes on all six and are toil. Rewriting the runbook scores yes only on manual and is marked engineering, not toil.">
+        <style>
+          .b7aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .b7aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b7aB { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b7aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b7aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b7aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <text class="b7aH" x="14" y="42">Property</text>
+        <rect x="262" y="20" width="196" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="b7aT" x="360" y="42" text-anchor="middle">Acknowledge a repeat page</text>
+        <rect x="470" y="20" width="196" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="b7aT" x="568" y="42" text-anchor="middle">Run a backfill by hand</text>
+        <rect x="678" y="20" width="188" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="b7aH" x="772" y="42" text-anchor="middle">Rewrite the runbook</text>
+
+        <rect x="14" y="66" width="852" height="30" rx="6" fill="#F1F5F9"></rect>
+        <text class="b7aB" x="26" y="86">Manual</text>
+        <text class="b7aN" x="360" y="86" text-anchor="middle">yes</text>
+        <text class="b7aN" x="568" y="86" text-anchor="middle">yes</text>
+        <text class="b7aN" x="772" y="86" text-anchor="middle">yes</text>
+
+        <rect x="14" y="104" width="852" height="30" rx="6" fill="#F1F5F9"></rect>
+        <text class="b7aB" x="26" y="124">Repetitive</text>
+        <text class="b7aN" x="360" y="124" text-anchor="middle">yes</text>
+        <text class="b7aN" x="568" y="124" text-anchor="middle">yes</text>
+        <text class="b7aM" x="772" y="124" text-anchor="middle">no</text>
+
+        <rect x="14" y="142" width="852" height="30" rx="6" fill="#F1F5F9"></rect>
+        <text class="b7aB" x="26" y="162">Automatable</text>
+        <text class="b7aN" x="360" y="162" text-anchor="middle">yes</text>
+        <text class="b7aN" x="568" y="162" text-anchor="middle">yes</text>
+        <text class="b7aM" x="772" y="162" text-anchor="middle">no</text>
+
+        <rect x="14" y="180" width="852" height="30" rx="6" fill="#F1F5F9"></rect>
+        <text class="b7aB" x="26" y="200">Reactive, interrupt-driven</text>
+        <text class="b7aN" x="360" y="200" text-anchor="middle">yes</text>
+        <text class="b7aN" x="568" y="200" text-anchor="middle">yes</text>
+        <text class="b7aM" x="772" y="200" text-anchor="middle">no</text>
+
+        <rect x="14" y="218" width="852" height="30" rx="6" fill="#F1F5F9"></rect>
+        <text class="b7aB" x="26" y="238">No lasting value once done</text>
+        <text class="b7aN" x="360" y="238" text-anchor="middle">yes</text>
+        <text class="b7aN" x="568" y="238" text-anchor="middle">yes</text>
+        <text class="b7aM" x="772" y="238" text-anchor="middle">no</text>
+
+        <rect x="14" y="256" width="852" height="30" rx="6" fill="#F1F5F9"></rect>
+        <text class="b7aB" x="26" y="276">Scales with the number of pipelines</text>
+        <text class="b7aN" x="360" y="276" text-anchor="middle">yes</text>
+        <text class="b7aN" x="568" y="276" text-anchor="middle">yes</text>
+        <text class="b7aM" x="772" y="276" text-anchor="middle">no</text>
+
+        <rect x="262" y="296" width="196" height="26" rx="6" fill="#0F172A"></rect>
+        <text class="b7aT" x="360" y="314" text-anchor="middle">toil: 6 of 6</text>
+        <rect x="470" y="296" width="196" height="26" rx="6" fill="#1E293B"></rect>
+        <text class="b7aT" x="568" y="314" text-anchor="middle">toil: 6 of 6</text>
+        <rect x="678" y="296" width="188" height="26" rx="6" fill="#F59E0B"></rect>
+        <text class="b7aH" x="772" y="314" text-anchor="middle">engineering, not toil</text>
+
+        <rect x="14" y="336" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b7aN" x="38" y="348">One yes is not enough. A runbook rewrite is manual and still engineering: it is the work that removes toil.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - six properties against three tasks, and the one that is engineering.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The six properties, and the two neighbours toil gets confused with<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A task is toil when it is <strong>manual</strong> (a person does it), <strong>repetitive</strong> (the same task recurs), <strong>automatable</strong> (a machine could do it as well), <strong>reactive</strong> (it interrupts rather than being scheduled), leaves <strong>no lasting value</strong> (the system is in the same state after as before), and <strong>scales with the number of pipelines</strong> rather than with the business. That last property is the sharp one for a data team: ten more pipelines means ten times the backfills by hand, with no more revenue to show for it.</p>
+        <p>Overhead fails "automatable" and "scales with pipelines": planning does not double when the estate does. Engineering fails "repetitive" and "no lasting value": the runbook is rewritten once and the rewrite is what stops the next twenty-nine minutes of improvisation. Both are manual. Manual alone tells you nothing.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Harborlight's toil last month, enumerated honestly<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Honest means including the small things, because the small things are where toil hides. The on-call log and the ticket queue for last month gave six items:</p>
+        <table class="clean">
+          <thead><tr><th>Toil item</th><th>Occurrences</th><th>Minutes each</th><th>Hours in the month</th></tr></thead>
+          <tbody>
+            <tr><td>Repeat threshold pages acknowledged (35 pages, 30 of them repeats)</td><td>30</td><td>30</td><td><strong>15.0</strong></td></tr>
+            <tr><td>Backfills run by hand, watched to completion</td><td>3</td><td>180</td><td><strong>9.0</strong></td></tr>
+            <tr><td>Stale-partition tickets from analysts, answered by hand</td><td>12</td><td>20</td><td>4.0</td></tr>
+            <tr><td>Weekly manual check that the settlement export ran</td><td>4</td><td>45</td><td>3.0</td></tr>
+            <tr><td>Runbook step: copy the diagnosis query out of the wiki, edit the hour</td><td>5</td><td>25</td><td>2.1</td></tr>
+            <tr><td>Month-end reconciliation with finance, by hand</td><td>1</td><td>120</td><td>2.0</td></tr>
+          </tbody>
+        </table>
+        <p>Total: 35.1 hours in the month. Two people carry the rota, so 17.6 hours each, which over 4.3 weeks is 4.1 hours per person per week. The 30 repeat pages are the bench's 35 threshold pages minus the 5 that were the first word of an incident: 14 percent of the pages were actionable and the other 86 percent were toil at two in the morning.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What was left out, and why it matters that it was<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Sleep lost</strong> is not in the table. Thirty repeat pages at night cost far more than 30 minutes each in the next day's output, but that cost is not in any log, so it is stated in words next to the number rather than invented as a number.</li>
+          <li><strong>The incident work itself</strong> (diagnosis, safe state, coordination) is not toil. It is reactive and manual, but it is not repetitive in the toil sense and it produces the incident package. It is counted separately as incident hours.</li>
+          <li><strong>Standups and planning</strong> are overhead, logged but not counted. A team can hide toil by calling it overhead, which is why the classification is written down per category, not decided per entry.</li>
+          <li><strong>Work by people not on the rota</strong> is counted if it is toil: the analyst who re-runs a dashboard by hand every Monday because the partition is late is doing the pipeline's toil for it.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the toil budget and what to automate first</span>
+      <h2>A toil budget, and what to automate first</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">A measured toil number is only useful with a ceiling next to it. The ceiling is agreed the way the error budget is: above it, engineering time goes to removing toil before it goes to features, and that rule is written into the contract so it does not have to be re-argued every sprint.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six toil items ranked as horizontal bars by hours in the month: repeat pages 15.0, manual backfills 9.0, stale-partition tickets 4.0, weekly export check 3.0, wiki query copy 2.1, month-end reconciliation 2.0. The top two are struck through as already removed by burn-rate alerting and the idempotent backfill job. The tickets bar is highlighted as the next item to automate. The reconciliation bar is marked as kept, with the decision written down.">
+        <style>
+          .b7bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b7bB { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b7bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b7bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b7bW { font: 700 11px Inter, sans-serif; fill: #fff; }
+        </style>
+
+        <text class="b7bH" x="14" y="30">Toil ranked by occurrences times minutes, last month</text>
+
+        <text class="b7bB" x="14" y="72">Repeat threshold pages</text>
+        <text class="b7bM" x="14" y="86">30 x 30 min</text>
+        <rect x="300" y="60" width="480" height="26" rx="4" fill="#CBD5E1"></rect>
+        <text class="b7bN" x="312" y="78">removed by burn-rate alerting: 35 pages to 5</text>
+        <line x1="300" y1="73" x2="780" y2="73" stroke="#991B1B" stroke-width="2.5"></line>
+        <text class="b7bN" x="788" y="78">15.0 h</text>
+
+        <text class="b7bB" x="14" y="116">Backfills run by hand</text>
+        <text class="b7bM" x="14" y="130">3 x 180 min</text>
+        <rect x="300" y="104" width="288" height="26" rx="4" fill="#CBD5E1"></rect>
+        <text class="b7bN" x="312" y="122">removed by the idempotent backfill job</text>
+        <line x1="300" y1="117" x2="588" y2="117" stroke="#991B1B" stroke-width="2.5"></line>
+        <text class="b7bN" x="596" y="122">9.0 h</text>
+
+        <text class="b7bB" x="14" y="160">Stale-partition tickets</text>
+        <text class="b7bM" x="14" y="174">12 x 20 min</text>
+        <rect x="300" y="148" width="128" height="26" rx="4" fill="#F59E0B"></rect>
+        <text class="b7bN" x="364" y="166" text-anchor="middle">next</text>
+        <text class="b7bN" x="436" y="166">4.0 h · publish partition status so analysts self-serve</text>
+
+        <text class="b7bB" x="14" y="204">Weekly export check</text>
+        <text class="b7bM" x="14" y="218">4 x 45 min</text>
+        <rect x="300" y="192" width="96" height="26" rx="4" fill="#94A3B8"></rect>
+        <text class="b7bN" x="404" y="210">3.0 h · a coverage check on the export, after the tickets</text>
+
+        <text class="b7bB" x="14" y="248">Query copied from the wiki</text>
+        <text class="b7bM" x="14" y="262">5 x 25 min</text>
+        <rect x="300" y="236" width="67" height="26" rx="4" fill="#94A3B8"></rect>
+        <text class="b7bN" x="375" y="254">2.1 h · embed the query in the page payload</text>
+
+        <text class="b7bB" x="14" y="292">Month-end reconciliation</text>
+        <text class="b7bM" x="14" y="306">1 x 120 min</text>
+        <rect x="300" y="280" width="64" height="26" rx="4" fill="#94A3B8"></rect>
+        <text class="b7bN" x="372" y="298">2.0 h · kept: 24 h a year against a week to automate</text>
+
+        <rect x="14" y="336" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b7bN" x="38" y="348">Remove the top bar, then rank again. The two struck bars were 24 of 35.1 hours; what is left is 1.3 h a week each.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - toil ranked by frequency times duration, two bars already removed, the next one highlighted.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Measuring it: hours per person per week, from the logs you already have<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The unit is hours of toil per person per week, because that is the unit people feel and the unit a sprint is planned in. The sources are the on-call log, which records every page with its acknowledgement and close, and the ticket queue, which records every request a human answered by hand. Each entry gets a category, each category is classified once as toil, overhead or engineering, and the hours are summed. Estimating durations is allowed when the log has none, as long as the estimate is written down and the same for every occurrence of that category.</p>
+        <p>The honest version counts the twenty-minute pieces. A team that only counts the backfills will report 9 hours and believe it; the repeat pages were 15.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The toil budget, agreed like the error budget<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The error budget says the pipeline may have 21.6 bad partitions at 97 percent, and above that, features stop until reliability work has been done. The toil budget says the same about hours: Harborlight agreed 3 hours per person per week as the ceiling, and last month's 4.1 was over it. Being over is not a judgement about the team; it is the trigger. The next sprint's engineering time went to burn-rate alerting and the idempotent backfill job before anything else, and the toil fell to 1.3 hours per person per week, under the ceiling, with room for the estate to grow before the trigger fires again.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Without the written ceiling, the same two pieces of work had been proposed for three quarters and lost to features every time, because "the pager is a bit noisy" is an opinion and a feature deadline is a date. With the ceiling in the contract, 4.1 against 3 was a breach, and a breach gets the sprint.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The ordering rule: frequency times duration<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Automate the item whose occurrences times minutes is largest. Not the most annoying, not the one somebody already has a script for, and not the one that is easiest, because easy items are usually small. At Harborlight the rule produces this order:</p>
+        <ul>
+          <li><strong>Repeat pages, 15.0 hours.</strong> Removed by multi-window burn-rate alerting, which pages once per incident: 35 pages to 5, 8.2 a week to 1.2. Session 3's work was the largest toil reduction of the year and nobody had called it that.</li>
+          <li><strong>Backfills by hand, 9.0 hours.</strong> Removed by the idempotent backfill job from session 5, which is re-run from a watermark and watched by nobody.</li>
+          <li><strong>Stale-partition tickets, 4.0 hours.</strong> Next. Publishing the partition status the indicator query already computes lets analysts see for themselves that the 09:00 partition is late, instead of asking.</li>
+          <li><strong>Re-rank after each removal.</strong> The wiki query is copied once per incident, so it stays at 2.1 hours; the export check stays at 3.0. Orders change as items are removed, and the list is recomputed monthly rather than remembered.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Toil worth keeping, and writing that decision down<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Not every item on the list should be automated. The month-end reconciliation with finance is two hours once a month: 24 hours a year. Automating it means matching finance's spreadsheet logic, which changes each quarter, and would cost about a week of engineering plus maintenance. Doing it by hand is cheaper for now, and the decision is written down with the number that justified it and a date to revisit. What is not acceptable is leaving it unclassified, because an unclassified item is toil that has been made invisible again.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Measure a month of it</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">Bring your on-call log and your ticket queue for the last thirty days. If you have neither, Harborlight's <code class="mono">ops.oncall_log</code> has 35 pages, 12 tickets, 3 manual backfills and the rest of last month in it.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Pull the log and classify each entry.</strong> Every entry gets a category; every category is mapped once to toil, overhead or engineering. Anything unmapped shows up as its own row so it cannot hide.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute hours of toil per person per week.</strong> Sum the toil hours per person, divide by the weeks in the window. Harborlight: 35.1 hours, two people, 4.1 each per week.</p>
+      </div>
+      <div class="step">
+        <p><strong>Rank toil items by occurrences times minutes.</strong> The top of the list is what to automate first. Print the whole list, including the two-hour items.</p>
+      </div>
+      <div class="step">
+        <p><strong>Mark what sessions 3 and 5 already removed.</strong> Repeat pages under burn-rate alerting, backfills under the idempotent job. Subtract them and re-rank what is left.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the toil budget you would agree and the first automation you would fund.</strong> A ceiling in hours per person per week, the current number against it, and the top remaining item with its hours.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the three numbers for the leader report.</strong> Budget remaining at the current target, pages per week, toil hours per person per week. One row, dated, appended monthly.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Steps 1 and 2 · classify, then hours per person per week</span>
+with entries as (
+  select person, category, started_at, ended_at,
+         datediff('minute', started_at, ended_at) / 60.0 as hours,
+         case
+           when category in ('repeat_page', 'manual_backfill', 'stale_partition_ticket',
+                             'export_check', 'wiki_query_copy', 'month_end_reconciliation') then 'toil'
+           when category in ('standup', 'planning', 'review')                             then 'overhead'
+           when category in ('incident_response', 'runbook_rewrite', 'alert_redesign',
+                             'idempotent_job')                                             then 'engineering'
+           else 'unclassified'
+         end as kind
+  from ops.oncall_log
+  where started_at &gt;= dateadd('day', -30, current_timestamp)
+)
+select kind, count(*) as entries, round(sum(hours), 1) as hours
+from entries
+group by kind
+order by hours desc;
+-- toil 35.1 · engineering 22.5 · overhead 18.0 · unclassified 0
+
+select person,
+       round(sum(hours), 1)               as toil_hours,
+       round(sum(hours) / (30 / 7.0), 1)  as toil_hours_per_week
+from entries
+where kind = 'toil'
+group by person;
+-- Mara 17.6, 4.1 · Tomas 17.5, 4.1
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Steps 3 and 4 · rank, then subtract what is already gone</span>
+select category,
+       count(*)                                  as occurrences,
+       round(avg(hours) * 60)                    as minutes_each,
+       round(sum(hours), 1)                      as hours_in_month,
+       case category
+         when 'repeat_page'     then 'removed: burn-rate alerting (35 pages to 5)'
+         when 'manual_backfill' then 'removed: idempotent backfill job'
+         else 'open'
+       end                                       as status
+from entries
+where kind = 'toil'
+group by category
+order by hours_in_month desc;
+-- repeat_page 30 x 30 = 15.0 removed · manual_backfill 3 x 180 = 9.0 removed
+-- stale_partition_ticket 12 x 20 = 4.0 open · export_check 4 x 45 = 3.0 open
+-- wiki_query_copy 5 x 25 = 2.1 open · month_end_reconciliation 1 x 120 = 2.0 open, kept
+
+select round(sum(hours) / 2 / (30 / 7.0), 1) as toil_per_person_week_after
+from entries
+where kind = 'toil' and category not in ('repeat_page', 'manual_backfill');
+-- 1.3
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 6 · the three numbers for the leader report</span>
+insert into ops.reliability_report (month, target, budget_remaining, pages_per_week, toil_hours_per_person_week)
+select :last_month,
+       0.97,
+       greatest(0, 1 - 35 / (720 * (1 - 0.97)))      as budget_remaining,      -- 0: exhausted on night 15
+       (select count(*) from ops.alert_log
+        where pipeline = 'orders'
+          and fired_at &gt;= dateadd('day', -30, current_timestamp)) / (30 / 7.0)   as pages_per_week,
+       (select round(sum(hours) / 2 / (30 / 7.0), 1) from entries where kind = 'toil')   as toil_hours;
+-- as lived: 0 · 8.2 · 4.1
+-- same month under the new contract: 0 · 1.2 · 1.3
+    </div>
+
+    <div class="callout tip">
+      <p><strong>The budget number does not move</strong> between the two rows above, and that is correct. Burn-rate alerting and the idempotent job changed the pages and the toil; 35 bad partitions still happened, and at 97 percent the budget was still gone on night 15. The lever for that number is session 2's target and the engineering the budget breach buys, not the alert policy.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 8</h2>
+      <span class="tag exercise">40 min</span>
+    </div>
+    <ol>
+      <li>Classify every entry in your own on-call log for the last thirty days. Write down the category-to-kind mapping as a table, not in the query, so the next person classifies the same way.</li>
+      <li>Compute hours of toil per person per week and compare with what each person on the rota guessed before seeing it. Keep both numbers.</li>
+      <li>Rank by occurrences times minutes and identify the top item. Estimate the engineering cost of removing it and compare with a year of doing it.</li>
+      <li>Propose a toil ceiling in hours per person per week to whoever approves the sprint, with last month's number next to it. Bring the response.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">Which of these is engineering rather than toil?</p>
+      <button class="qopt" type="button">A · Acknowledging the thirteenth threshold page of night 9's outage and confirming the source is still down</button>
+      <button class="qopt" type="button">B · Re-running the night 27 backfill by hand and watching it to completion</button>
+      <button class="qopt" type="button">C · Rewriting the runbook so the safe-state step is one command instead of twenty-nine minutes of improvisation</button>
+      <p class="qwhy">The rewrite is manual, but it is not repetitive and it leaves lasting value: it is the work that removes toil. A and B are all six properties at once.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Harborlight's toil list has repeat pages at 15.0 hours, manual backfills at 9.0, and a month-end reconciliation at 2.0. What does the ordering rule say to automate first?</p>
+      <button class="qopt" type="button">A · The repeat pages, because occurrences times minutes is largest, which burn-rate alerting did by taking 35 pages to 5</button>
+      <button class="qopt" type="button">B · The reconciliation, because finance is the most important consumer</button>
+      <button class="qopt" type="button">C · Whichever item the team finds most annoying</button>
+      <p class="qwhy">Frequency times duration ranks the hours, and the hours are what the rota is losing. The repeat pages were the largest toil reduction available and session 3 had already made it.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Why is the month-end reconciliation left as manual toil, and what makes that acceptable?</p>
+      <button class="qopt" type="button">A · Because reconciliation cannot be automated</button>
+      <button class="qopt" type="button">B · Because 24 hours a year is cheaper than a week of engineering plus maintenance, and the decision is written down with a date to revisit</button>
+      <button class="qopt" type="button">C · Because items under three hours a month do not count as toil</button>
+      <p class="qwhy">Some toil is worth keeping for a while. What is not acceptable is leaving it unclassified, because that makes it invisible again.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Toil defined by its properties, and measured in hours</span>
+        <span class="note">Established SRE practice, taught as professional norm: manual, repetitive, automatable, reactive, no lasting value, scales with the estate. The 35.1 hours are Harborlight's.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">The toil budget as a ceiling, agreed like the error budget</span>
+        <span class="note">The same shape as 100 percent minus the SLO from the SRE workbook: above the ceiling, engineering time goes to reliability before features.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Burn-rate alerting as toil removal: 35 pages to 5</span>
+        <span class="note">The bench's canon, 8.2 a week to 1.2 with 14 percent actionable becoming 100, read here as 15 hours of toil removed.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Reporting the three numbers upward</span>
+        <span class="note">Leader session 6 owns the report. Here the row is computed: budget remaining, pages per week, toil hours per person per week.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Building the automation itself</span>
+        <span class="note">Publishing partition status, CI for the backfill job and orchestration belong to the DataOps and orchestration courses. Here they are ranked, not built.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and on-call for AI services</span>
+        <span class="note">Not covered by design. That is the AI observability course; here it is tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 7 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Six properties, all at once</b><span>Manual, repetitive, automatable, reactive, no lasting value, scales with pipelines.</span></div>
+      <div class="cheat-item"><b>Not overhead, not engineering</b><span>Planning is not automatable. A runbook rewrite is manual and still engineering.</span></div>
+      <div class="cheat-item"><b>Count the small things</b><span>Thirty 30-minute pages were 15 hours. Nobody had counted.</span></div>
+      <div class="cheat-item"><b>Hours per person per week</b><span>Harborlight: 35.1 in the month, 4.1 each on a rota of two.</span></div>
+      <div class="cheat-item"><b>A ceiling, like the error budget</b><span>3 hours agreed; 4.1 was a breach, and a breach gets the sprint.</span></div>
+      <div class="cheat-item"><b>Frequency times duration</b><span>Repeat pages first, then manual backfills. Sessions 3 and 5 already removed both.</span></div>
+      <div class="cheat-item"><b>Re-rank after each removal</b><span>Monthly, from the log. Next at Harborlight: 12 stale-partition tickets.</span></div>
+      <div class="cheat-item"><b>Some toil is kept, on paper</b><span>24 hours a year against a week to automate. Written down with a revisit date.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 7 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b6-incident-package.html">← Builder session 6 · The incident package</a>
+      <a href="b8-on-call-bench.html">Builder session 8 · The on-call bench →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

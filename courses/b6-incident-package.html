@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 6 of 8. The incident package: a timeline generated from the partition log and the alert log, impact stated as a share of the error budget, and actions with an owner and a date. Night 9 at Harborlight cost 14 partitions, two thirds of the budget at 97 percent, and had three contributing conditions rather than one root cause.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="The incident package - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 6 of 8. A timeline a query produces, impact in budget terms, and an action that is not a wish.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b6-incident-package.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The incident package - learn data reliability with phoebe">
+<meta name="twitter:description" content="Night 9: 14 bad partitions, two thirds of the budget, three contributing conditions and no single root cause.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 6 · The incident package - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 6 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 6 of 8</div>
+    <h1>The incident <span class="accent">package</span></h1>
+    <p class="sub">An incident is over when the backfill lands. What survives it is a document, and most of those documents are written a week later by the person who was most tired, from memory, in a shape that changes every time. Tonight the package is generated instead: a timeline the partition log and the alert log produce, impact stated as a share of the error budget, and actions that carry an owner and a date. Harborlight's night 9 is the worked case, because 14 bad partitions is two thirds of the month's budget and the room will want to blame the upstream.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Advanced</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · Timeline, impact, actions</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: package night 9</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 6 sits</h2>
+    </div>
+    <p class="lede">Sessions 1 to 5 built the contract: indicators, a target, a budget with burn-rate alerts, a runbook a tired person can follow, and a backfill that does not break the settlement report. Session 6 is what happens after each incident, and it is written for two readers: the on-call who was there and needs the actions, and the leader who was not and needs to decide what to fund. Session 7 adds toil and session 8 replays the whole month on the bench.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A query that produces an incident timeline from the logs you already keep, so every package has the same six timestamps in the same order. Impact as a number the budget conversation can use: night 9 was 14 partitions, two thirds of 21.6. A test that separates an action from a wish. And an incidents table that lets five packages be read as one, which is where the finding about nights 21 and 27 comes from.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the package is generated, not remembered<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A postmortem written from memory has three problems that no amount of good intent fixes. The times are wrong, because nobody at 02:00 was writing them down. The shape is different every time, because each author decides what matters. And it can be argued with, because a recollection is an opinion about what happened. A timeline produced by a query has none of those problems: the timestamps were recorded by machines at the moment, the six fields are the same for every incident, and the only argument available is about the query, which is a better argument to have.</p>
+        <p>The partition log from session 1 and the alert log from session 3 already hold everything the timeline needs. The package is a view over two tables plus three lines a human writes: conditions, actions, and who reads the stale data.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's first postmortem for night 9 said the outage "lasted about six hours" and that the on-call "responded promptly". The partition log says 14 bad partitions from 01:00 to 14:00 and the alert log says seven minutes from page to acknowledgement. Both facts are kinder to the on-call than the memory was, and neither needed anyone to remember anything.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The six timestamps, and where each one lives<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>First bad partition</strong> - the earliest partition hour in the incident that fails any of freshness, correctness or coverage. Partition log.</li>
+          <li><strong>Page time</strong> - when the alert fired. Alert log. Under burn-rate alerting this is the first bad hour of the incident; under threshold paging it is the same moment, followed by thirteen more on night 9.</li>
+          <li><strong>Acknowledgement</strong> - when a human took the page. Alert log. Page to acknowledgement is the number the rota design in leader session 3 is judged on.</li>
+          <li><strong>Safe state reached</strong> - when the runbook's safe-state step completed: downstream refresh paused, partitions marked stale, readers told. Alert log, written by the runbook step itself.</li>
+          <li><strong>Last bad partition</strong> - the latest partition hour in the incident that failed. Partition log.</li>
+          <li><strong>Backfill complete</strong> - when the last bad partition was replaced by a good one. Partition log, the <code class="mono">backfilled_at</code> column session 5's idempotent job writes.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers timeline, impact in budget terms, actions with owners</span>
+      <h2>Three sections, generated not remembered</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">A package has three sections and a fixed order: what happened and when, what it cost, what changes. The first is a query. The second is arithmetic on the budget from session 3. Only the third needs judgement, and the judgement is checked by a test.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal strip for Harborlight's night 9 with six timestamps read from the logs: first bad partition at 01:00, paged at 02:04, acknowledged at 02:11, safe state at 02:40, last bad partition at 14:00, backfill complete at 16:35. Fourteen red cells between the first and last bad partition mark the fourteen bad partitions. Elapsed intervals are written between the markers and each timestamp names the log it came from.">
+        <style>
+          .b6aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b6aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .b6aM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b6aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b6aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b6aW { font: 700 11px Inter, sans-serif; fill: #fff; }
+        </style>
+
+        <text class="b6aH" x="14" y="30">Night 9, generated from two logs (not to scale)</text>
+
+        <text class="b6aH" x="74" y="76" text-anchor="middle">01:00</text>
+        <text class="b6aB" x="74" y="92" text-anchor="middle">first bad partition</text>
+        <text class="b6aM" x="74" y="106" text-anchor="middle">partition log</text>
+
+        <text class="b6aH" x="214" y="76" text-anchor="middle">02:04</text>
+        <text class="b6aB" x="214" y="92" text-anchor="middle">paged</text>
+        <text class="b6aM" x="214" y="106" text-anchor="middle">alert log</text>
+
+        <text class="b6aH" x="354" y="76" text-anchor="middle">02:11</text>
+        <text class="b6aB" x="354" y="92" text-anchor="middle">acknowledged</text>
+        <text class="b6aM" x="354" y="106" text-anchor="middle">alert log</text>
+
+        <text class="b6aH" x="494" y="76" text-anchor="middle">02:40</text>
+        <text class="b6aB" x="494" y="92" text-anchor="middle">safe state reached</text>
+        <text class="b6aM" x="494" y="106" text-anchor="middle">alert log</text>
+
+        <text class="b6aH" x="634" y="76" text-anchor="middle">14:00</text>
+        <text class="b6aB" x="634" y="92" text-anchor="middle">last bad partition</text>
+        <text class="b6aM" x="634" y="106" text-anchor="middle">partition log</text>
+
+        <text class="b6aH" x="774" y="76" text-anchor="middle">16:35</text>
+        <text class="b6aB" x="774" y="92" text-anchor="middle">backfill complete</text>
+        <text class="b6aM" x="774" y="106" text-anchor="middle">partition log</text>
+
+        <line x1="74" y1="114" x2="74" y2="150" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="214" y1="114" x2="214" y2="150" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="354" y1="114" x2="354" y2="150" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="494" y1="114" x2="494" y2="150" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="634" y1="114" x2="634" y2="150" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="774" y1="114" x2="774" y2="150" stroke="#C4CDD9" stroke-width="1.5"></line>
+
+        <rect x="40" y="150" width="800" height="30" rx="6" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+
+        <rect x="74" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="114" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="154" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="194" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="234" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="274" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="314" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="354" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="394" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="434" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="474" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="514" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="554" y="153" width="38" height="24" fill="#991B1B"></rect>
+        <rect x="594" y="153" width="38" height="24" fill="#991B1B"></rect>
+
+        <rect x="636" y="153" width="136" height="24" rx="3" fill="#1E293B"></rect>
+        <text class="b6aW" x="704" y="170" text-anchor="middle">backfill running</text>
+
+        <text class="b6aR" x="354" y="200" text-anchor="middle">14 bad partitions, 01:00 to 14:00, each an hour the settlement report read stale</text>
+
+        <text class="b6aM" x="144" y="228" text-anchor="middle">1 h 04 to page</text>
+        <text class="b6aM" x="284" y="228" text-anchor="middle">7 min to ack</text>
+        <text class="b6aM" x="424" y="228" text-anchor="middle">29 min to safe state</text>
+        <text class="b6aM" x="564" y="228" text-anchor="middle">source down 12 h</text>
+        <text class="b6aM" x="704" y="228" text-anchor="middle">2 h 35 to backfill</text>
+
+        <rect x="14" y="282" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b6aN" x="38" y="294">Every timestamp above is a query result. The elapsed times are subtraction. Nothing was typed from memory.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - night 9's timeline as the two logs produce it, with the 14 bad partitions as the span.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The timeline: six timestamps, two tables, one query<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The partition log gives the first bad partition, the last bad partition and the backfill completion. The alert log gives the page, the acknowledgement and the safe state. Join them on the incident window and the timeline is a single row. Because it is a query, night 4's timeline has the same six columns as night 9's, and the leader reading five packages can compare page-to-acknowledgement across all of them without translating five different prose styles.</p>
+        <p>The elapsed times fall out by subtraction: an hour and four minutes from the first bad partition to the page, because the partition's deadline is the hour plus sixty minutes of grace and the detector ran four minutes after; seven minutes to acknowledgement; twenty-nine minutes to a safe state. Those three intervals are what the rota and the runbook are for, and the timeline is the only place they are measured.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Impact in budget terms, not adjectives<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Severe" and "major" are not numbers, and a budget conversation needs a number. The impact section states how many partitions went bad and what share of the error budget that was at the current target. Night 9 was 14 partitions. At a 97 percent target the month's budget is 21.6 partitions, so night 9 alone spent two thirds of it, and with night 4's three already gone the budget was exhausted six nights later on night 15. Stated that way, the outage is not a story; it is the reason the settlement team was promised something the pipeline could not keep.</p>
+        <p>The second half of impact is who read the stale data. The lineage table lists which downstream jobs read which partitions, so the package can say "the settlement report read all 14 stale partitions; the seller payouts batch read 6 before the backfill landed" instead of "downstream reports were affected".</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The service-reliability workbook's worked example is an incident that consumed 13 percent of a budget, and the point of the example is that 13 percent is a number the business can weigh against a launch. Night 9 at Harborlight consumed two thirds. Once that was on a slide, the dependency SLO with the source team stopped being a nice idea and became a funded action.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Actions with an owner and a date<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>An action is a change to the system, the runbook or the contract that would have made the incident shorter, smaller or impossible. It carries three fields and is rejected without any one of them:</p>
+        <ul>
+          <li><strong>Owner</strong> - one named person, not a team. A team owning an action is the same as nobody owning it, because everybody on the team assumes somebody else is on it.</li>
+          <li><strong>Date</strong> - a day, not a sprint or a quarter. The set review in a month checks the date against the calendar.</li>
+          <li><strong>Verifiable when done</strong> - a check that returns true or false: a row exists in the contracts table, a runbook step exists and was dry-run, a query returns a count. If nobody can tell whether it is done, it is not an action.</li>
+        </ul>
+        <p>Two or three actions per package is normal. Eight is a sign the package is listing everything that could be better rather than what would have changed this night.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers contributing conditions and the set review</span>
+      <h2>Contributing conditions, not a root cause, and the action that is a wish</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">A single root cause is a comfortable story: find the one thing, fix the one thing, close the ticket. Real incidents in real pipelines are a coincidence of conditions, each of which was true for months without an incident. Night 9 had three, and removing any one of them would have changed the night.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The incident package as three panels: timeline with the six timestamps, impact in budget terms with 14 partitions as two thirds of 21.6 and the downstream readers, and actions with an owner and a date plus one rejected wish. Beneath, three connected boxes give the contributing conditions: upstream outage, no dependency SLO with the source, runbook stopped at diagnosis. A single root cause box is struck through.">
+        <style>
+          .b6bT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .b6bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b6bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .b6bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b6bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b6bR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <defs>
+          <marker id="b6bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <rect x="14" y="20" width="276" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="b6bT" x="152" y="42" text-anchor="middle">1 · Timeline (generated)</text>
+        <rect x="14" y="60" width="276" height="150" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b6bB" x="26" y="84">01:00 first bad partition</text>
+        <text class="b6bB" x="26" y="104">02:04 paged · 02:11 acknowledged</text>
+        <text class="b6bB" x="26" y="124">02:40 safe state reached</text>
+        <text class="b6bB" x="26" y="144">14:00 last bad partition</text>
+        <text class="b6bB" x="26" y="164">16:35 backfill complete</text>
+        <text class="b6bM" x="26" y="192">partition log joined to alert log</text>
+
+        <rect x="302" y="20" width="276" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="b6bT" x="440" y="42" text-anchor="middle">2 · Impact in budget terms</text>
+        <rect x="302" y="60" width="276" height="150" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b6bB" x="314" y="84">14 bad partitions of 24 that night</text>
+        <text class="b6bN" x="314" y="104">two thirds of 21.6 at 97 percent</text>
+        <text class="b6bB" x="314" y="124">budget exhausted on night 15</text>
+        <text class="b6bB" x="314" y="144">stale reads: settlement report 14,</text>
+        <text class="b6bB" x="314" y="164">seller payouts 6, ops dashboard 14</text>
+        <text class="b6bM" x="314" y="192">budget arithmetic plus lineage table</text>
+
+        <rect x="590" y="20" width="276" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="b6bH" x="728" y="42" text-anchor="middle">3 · Actions: owner, date, check</text>
+        <rect x="590" y="60" width="276" height="150" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b6bB" x="602" y="84">dependency SLO with the source team</text>
+        <text class="b6bM" x="602" y="100">Mara · by the 20th · row in contracts</text>
+        <text class="b6bB" x="602" y="124">safe-state step added to the runbook</text>
+        <text class="b6bM" x="602" y="140">Tomas · by the 15th · dry-run once</text>
+        <text class="b6bR" x="602" y="168">rejected: "monitor upstream closely"</text>
+        <text class="b6bM" x="602" y="192">no owner, no date, nothing to verify</text>
+
+        <text class="b6bH" x="14" y="246">Contributing conditions: all three true, none alone the cause</text>
+
+        <rect x="14" y="262" width="270" height="38" rx="8" fill="#CBD5E1"></rect>
+        <text class="b6bH" x="149" y="286" text-anchor="middle">the upstream feed went down</text>
+        <line x1="284" y1="281" x2="304" y2="281" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b6bAr)"></line>
+        <rect x="305" y="262" width="270" height="38" rx="8" fill="#CBD5E1"></rect>
+        <text class="b6bH" x="440" y="286" text-anchor="middle">no dependency SLO with the source</text>
+        <line x1="575" y1="281" x2="595" y2="281" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b6bAr)"></line>
+        <rect x="596" y="262" width="270" height="38" rx="8" fill="#CBD5E1"></rect>
+        <text class="b6bH" x="731" y="286" text-anchor="middle">runbook stopped at diagnosis</text>
+
+        <rect x="14" y="324" width="300" height="34" rx="8" fill="#F1F5F9" stroke="#991B1B"></rect>
+        <text class="b6bR" x="164" y="346" text-anchor="middle">Root cause: the upstream outage</text>
+        <line x1="14" y1="341" x2="314" y2="341" stroke="#991B1B" stroke-width="2.5"></line>
+        <text class="b6bM" x="330" y="346">one cause invites one fix, and the fix belongs to another team</text>
+
+        <rect x="14" y="380" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b6bN" x="38" y="392">Sections 1 and 2 are queries. Section 3 is judgement, tested. The conditions are three lines a human writes.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the package as three panels, the three conditions beneath, and the single root cause struck out.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Three conditions, all true, none alone the cause<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Night 9's upstream feed went down for twelve hours. That is a fact, and it is where a root-cause postmortem stops: the cause was upstream, the fix is theirs, closed. But the same feed had been flaky for a year without a 14-partition incident, so the outage alone does not explain the night. Two more conditions were true. There was no dependency SLO with the source team, so nobody at Harborlight had a number for how late the feed was allowed to be, and nobody at the source knew a settlement report depended on it. And the runbook stopped at diagnosis: it told the on-call how to confirm the feed was down and nothing about what to do next, so the safe state took twenty-nine minutes of improvisation.</p>
+        <p>Each condition maps to an action Harborlight can own. The outage maps to a fix another team owns and may never make. Contributing conditions are not a softer way of saying root cause; they are the list of things you can actually change.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The action test, and the action that is a wish<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Run every proposed action through three questions: who, by when, and how will anyone know. "Add a coverage check on shard count, owner Mara, by the 20th, verified by a row in the indicators table" passes all three. "Be more careful with upstream changes" fails all three, and it is the most common action in postmortems everywhere, because it feels like accountability and costs nothing.</p>
+        <div class="prompt-box good">
+          <span class="label">★ An action</span>
+Add a coverage check on shard count to the orders partition log.
+Owner: Mara. Due: the 20th.
+Done when: ops.indicators has a row named orders_coverage_shards
+           and night 27's four partitions fail it on replay.
+        </div>
+        <div class="prompt-box bad">
+          <span class="label">✗ A wish</span>
+Be more careful with upstream changes and monitor the feed more closely.
+        </div>
+        <p>A wish in an actions list is worse than an empty list, because it lets the package close. The set review a month later finds it unverifiable and the same conditions still true.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Written for a reader who was not there<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The package is the input to the postmortem review on the leader track, and the reader there was asleep on night 9. Everything they need has to be on the page, which changes how it is written:</p>
+        <ul>
+          <li><strong>No pronouns without names.</strong> "We paused the refresh" becomes "the on-call (Tomas) paused the settlement refresh at 02:40".</li>
+          <li><strong>No system nicknames.</strong> The feed has a table name and an owning team; the package uses both.</li>
+          <li><strong>Impact before narrative.</strong> The leader reads the budget share first and decides whether to read the rest. Fourteen partitions and two thirds of the budget earns the rest.</li>
+          <li><strong>Blameless by construction.</strong> The timeline is a query and the conditions are properties of the system, so there is no sentence in the package that is about a person's judgement. That is what makes people willing to write the honest version.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The set review: what five packages say that one cannot<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Because the packages land in a table with the same columns, the five incidents of the month can be queried together. Night 21's flapping connector and night 27's partial load look unrelated in their own packages: one is a network problem, the other a source that shipped two shards of three. Read together, both list the same contributing condition: no coverage check on shard count, so partitions landed on time, reconciled, and missing a third of their rows, and nothing noticed for hours. One action, owned once, closes a condition that two separate packages would each have asked for separately or not at all.</p>
+        <p>The set review is also where actions are checked against their dates. An action past due with no verification is a wish that was well dressed.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Package night 9</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">Bring the partition log from session 1 and the alert log from session 3. If you are working from Harborlight's data, night 9 is the upstream outage: 14 bad partitions, and the package should come out at two thirds of the budget at 97 percent without anyone typing 14.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Generate the timeline.</strong> Select night 9's bad partitions from the partition log, find the alerts inside that window in the alert log, and produce one row with six timestamps. Do not edit the result; if it looks wrong, the log is wrong and that is a finding.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute impact.</strong> Count the bad partitions and divide by the budget at the current target: 720 times one minus the target. At 97 percent, 14 over 21.6.</p>
+      </div>
+      <div class="step">
+        <p><strong>List the downstream readers.</strong> Join the bad partitions to the lineage table and count, per consumer, how many stale partitions were read before the backfill landed.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the contributing conditions as three lines.</strong> Each is a property of the system that was true before the night began. If a line names a person, rewrite it until it names a system.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write two actions and reject one wish.</strong> Owner, date, verification for each. Read your list aloud and strike anything that does not answer all three.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the package to the incidents table.</strong> One row for the incident, one row per condition, one row per action. Then run the set review across all five nights and see what surfaces.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 1 · the timeline</span>
+with events as (
+  select partition_hour, landed_at, backfilled_at,
+         datediff('day', :window_start, partition_hour) + 1                              as night,
+         landed_at &lt;= partition_hour + interval '60 minute'                              as fresh,
+         reconciled                                                                       as correct,
+         row_count &gt;= 0.9 * lag(row_count, 168) over (order by partition_hour)            as covered
+  from ops.orders_partition_log
+  where partition_hour &gt;= dateadd('day', -30, current_timestamp)
+),
+bad9 as (
+  select * from events where night = 9 and not (fresh and correct and covered)
+),
+alerts9 as (
+  select fired_at, acked_at, safe_state_at
+  from ops.alert_log
+  where pipeline = 'orders'
+    and fired_at between (select min(partition_hour) from bad9)
+                     and (select max(partition_hour) from bad9) + interval '2 hour'
+)
+select (select min(partition_hour) from bad9)    as first_bad,
+       (select min(fired_at)       from alerts9) as paged,
+       (select min(acked_at)       from alerts9) as acknowledged,
+       (select min(safe_state_at)  from alerts9) as safe_state,
+       (select max(partition_hour) from bad9)    as last_bad,
+       (select max(backfilled_at)  from bad9)    as backfill_complete;
+-- night 9: 01:00 · 02:04 · 02:11 · 02:40 · 14:00 · 16:35
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Steps 2 and 3 · impact and readers</span>
+select count(*)                          as bad_partitions,
+       count(*) / (720 * (1 - 0.97))     as budget_share_at_97
+from bad9;
+-- 14 · 0.648, two thirds of the 21.6 budget
+
+select r.consumer,
+       count(distinct r.partition_hour)  as stale_partitions_read
+from ops.lineage_reads r
+join bad9 b
+  on  b.partition_hour = r.partition_hour
+  and r.source_table   = 'orders'
+  and r.read_at        &lt; b.backfilled_at
+group by r.consumer
+order by stale_partitions_read desc;
+-- settlement_report 14 · ops_dashboard 14 · seller_payouts 6
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 6 · write the package, then read the set</span>
+insert into ops.incidents
+  (night, title, first_bad, paged, acknowledged, safe_state, last_bad, backfill_complete,
+   bad_partitions, target, budget_share)
+select 9, 'upstream outage', first_bad, paged, acknowledged, safe_state, last_bad, backfill_complete,
+       14, 0.97, 14 / (720 * (1 - 0.97))
+from night9_timeline;
+
+insert into ops.incident_conditions (night, condition) values
+  (9, 'upstream feed down'),
+  (9, 'no dependency SLO with the source team'),
+  (9, 'runbook stopped at diagnosis');
+
+insert into ops.incident_actions (night, action, owner, due, done_when) values
+  (9, 'dependency SLO with the source team', 'Mara',  :the_20th, 'row in ops.contracts'),
+  (9, 'safe-state step in the orders runbook', 'Tomas', :the_15th, 'runbook step 4 exists, dry-run once');
+
+-- the set review: conditions shared across the month's five packages
+select condition,
+       count(*)                                          as incidents,
+       listagg(night, ', ') within group (order by night) as nights
+from ops.incident_conditions
+group by condition
+having count(*) &gt; 1;
+-- no coverage check on shard count | 2 | 21, 27
+    </div>
+
+    <div class="callout tip">
+      <p><strong>If your timeline query returns nulls,</strong> the runbook is not writing its safe-state timestamp, or the backfill job is not stamping <code class="mono">backfilled_at</code>. Either is a finding worth more than the package: an incident you cannot time is an incident you cannot shorten.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 7</h2>
+      <span class="tag exercise">40 min</span>
+    </div>
+    <ol>
+      <li>Generate the timeline for each of the other four Harborlight incidents: nights 4, 15, 21 and 27. Note which timestamps come back null and what would have to be logged to fill them.</li>
+      <li>Compute impact for all five in budget terms at 97 percent. Check that the five shares sum to 35 over 21.6, which is why the budget ran out on night 15.</li>
+      <li>Write contributing conditions for night 27's partial load, then run the set review and confirm it pairs with night 21.</li>
+      <li>Take the last postmortem your own team wrote and test each action for owner, date and verification. Count the wishes. Bring the count, not the document.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Which of these belongs in the actions section of an incident package?</p>
+      <button class="qopt" type="button">A · Be more careful with upstream changes and monitor the feed more closely</button>
+      <button class="qopt" type="button">B · Add a coverage check on shard count, owner Mara, by the 20th, done when ops.indicators has the row and night 27 fails it on replay</button>
+      <button class="qopt" type="button">C · Improve reliability of the orders pipeline as a team priority for the quarter</button>
+      <p class="qwhy">An action has an owner, a date and a check that returns true or false. A and C have none of the three; they are wishes, and a wish lets the package close with the conditions still true.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">Why generate the timeline from the partition log and the alert log instead of writing it from memory?</p>
+      <button class="qopt" type="button">A · Because writing prose takes longer than running a query</button>
+      <button class="qopt" type="button">B · Because auditors prefer machine output</button>
+      <button class="qopt" type="button">C · Because a queried timeline has the same six fields for every incident and cannot be argued with, while a timeline typed a week later is fiction with timestamps</button>
+      <p class="qwhy">The value is comparability and truth. Page-to-acknowledgement across five incidents is only a number if all five timelines came from the same query over the same logs.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">What does reading the month's five packages together produce that no single package can?</p>
+      <button class="qopt" type="button">A · A condition shared across incidents: nights 21 and 27 both lacked a coverage check on shard count, so one owned action closes both</button>
+      <button class="qopt" type="button">B · A more accurate root cause for the largest incident</button>
+      <button class="qopt" type="button">C · A ranking of on-call engineers by acknowledgement time</button>
+      <p class="qwhy">A flapping connector and a partial load look unrelated on their own. The set review finds the property of the system they share, which is the action worth funding first.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE workbook, Implementing SLOs - an incident measured as a share of the error budget</span>
+        <span class="note">The workbook's worked example is 13 percent of a budget. Night 9 is 14 of 21.6, two thirds, at the 97 percent target.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Blameless postmortems - timeline, contributing conditions, actions with owners</span>
+        <span class="note">Established practice, taught as professional norm. The generated timeline and the owner-date-verification test are the working form of it.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Error budget as 100 percent minus the SLO</span>
+        <span class="note">Reused from session 3 to turn 14 partitions into a budget share.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">The postmortem review as a leadership act</span>
+        <span class="note">Leader session 4 owns what the five incidents teach and how to run the review. Here the package is built as its input.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Severity weighting of incidents</span>
+        <span class="note">Every bad partition counts the same in the impact section. A corrupt settlement total is worse than a late one; weighting is the first extension.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and incident review for AI services</span>
+        <span class="note">Not covered by design. That is the AI observability course; here it is tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 6 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Three sections, fixed order</b><span>Timeline, impact in budget terms, actions. The first two are queries.</span></div>
+      <div class="cheat-item"><b>Six timestamps</b><span>First bad, paged, acknowledged, safe state, last bad, backfill complete. Two logs, one row.</span></div>
+      <div class="cheat-item"><b>Generated, not remembered</b><span>Same fields every incident; cannot be argued with. Memory a week later is fiction with timestamps.</span></div>
+      <div class="cheat-item"><b>Impact is a budget share</b><span>Night 9: 14 partitions, two thirds of 21.6 at 97 percent. Then who read the stale data.</span></div>
+      <div class="cheat-item"><b>Conditions, not a root cause</b><span>Outage, no dependency SLO, runbook stopped at diagnosis. All true; none alone the cause.</span></div>
+      <div class="cheat-item"><b>The action test</b><span>Owner, date, verifiable when done. Fail one and it is a wish.</span></div>
+      <div class="cheat-item"><b>Write for the absent reader</b><span>Names not pronouns, table names not nicknames, impact before narrative.</span></div>
+      <div class="cheat-item"><b>Read the set</b><span>Five packages in one table. Nights 21 and 27 share a missing coverage check; one action closes both.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 6 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b5-backfills.html">← Builder session 5 · Backfills</a>
+      <a href="b7-toil.html">Builder session 7 · Toil →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

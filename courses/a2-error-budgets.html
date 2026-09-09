@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Leader session 2 of 6. The error budget is one hundred percent minus the promise, counted in bad partitions. Harborlight's month replayed at 95, 97, 99 and 99.9 percent: 36 allowed and 3 percent left, or exhausted on night 15, night 9, night 4. The budget is the currency that decides between shipping a change and hardening the pipeline.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Error budgets buy decisions - learn data reliability with phoebe">
+<meta property="og:description" content="Leader session 2 of 6. Four promises, one month, and the night each one ran out.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/a2-error-budgets.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Error budgets buy decisions - learn data reliability with phoebe">
+<meta name="twitter:description" content="Budget healthy, ship. Budget burning, stop and fix. The rule is agreed before the month starts.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Leader session 2 · Error budgets buy decisions - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Leader session 2 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Leader session 2 of 6</div>
+    <h1>Error budgets <span class="accent">buy decisions</span></h1>
+    <p class="sub">Last time ended with two numbers side by side: what the team believed and what the history said. Tonight the measured one becomes a budget. One hundred percent minus the promise, counted in bad partitions, is a quantity you can spend, run out of, and argue about in a steering meeting. Harborlight's month is replayed at four candidate promises, and each one runs out on a different night or does not run out at all. The budget is not a compliance number. It is the currency that decides, in advance, whether the next change ships or the pipeline gets hardened first.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Foundational</span>
+      <span class="chip audience">Data and analytics leaders</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · The budget as currency</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: spend one budget</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where the budget comes from</h2>
+    </div>
+    <p class="lede">A promise of less than 100 percent is also a permission. Promise that 95 percent of partitions will be good and you have said that 5 percent may be bad without anybody having broken their word. That 5 percent, turned into a count of partitions in the window, is the <strong>error budget</strong>. Everything tonight is arithmetic on Harborlight's thirty nights: 720 hourly partitions, 35 of them bad, five incidents. The arithmetic is simple. What it changes about who decides what is not.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The budget for one pipeline at three candidate promises, and the night each would have run out last month. A shipping rule, written in one paragraph, that decides between releasing a change and hardening the pipeline before anyone has to argue about it under pressure. And the loosest target the reader can live with, chosen on purpose, with the reason written next to it.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>A promise implies a permission<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Most teams hear a reliability target as a threat: a number to stay above. The service-reliability literature reads it the other way round. The distance between the target and 100 percent is failure that has been agreed in advance, and agreed failure is a resource. It can be spent on a risky release, on a migration, on a night when the upstream is down and there is nothing to be done. What it cannot be is ignored, because when it is gone the promise is broken and every further bad partition is a breach.</p>
+        <p>Reading the target as a permission is what makes it a leadership instrument. A threat produces defensiveness and quiet re-measurement. A budget produces a question the team can answer every Monday: how much have we spent, how much is left, and what does that mean for the change waiting to ship?</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's platform team had spent a year hearing "99 percent" as a bar they were failing to clear, and had stopped bringing up incidents in the weekly meeting because each one felt like an admission. The first week the budget was on a slide as a count, 36 partitions allowed and 35 spent, the same incidents were discussed openly, because the question had changed from "why did this fail" to "what did this cost us and can we afford the next one".</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The month, as the arithmetic sees it<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>720 events.</strong> 24 hourly partitions a night for 30 nights. A partition is good when it landed within its hour, its totals reconcile and all three shards arrived.</li>
+          <li><strong>35 bad events</strong>, giving 685 good and 95.14 percent achieved.</li>
+          <li><strong>Five incidents.</strong> Night 4, a late load, 3 bad partitions. Night 9, an upstream outage, 14. Night 15, a corrupt batch, 6 partitions on time and wrong. Night 21, a flapping connector, 8 scattered across the night. Night 27, a partial load, 4.</li>
+          <li><strong>Cumulative spend</strong> after each incident: 3, then 17, then 23, then 31, then 35. The exhaustion night for any budget is the first incident whose cumulative total passes it, which is why every candidate promise below runs out on an incident night or not at all.</li>
+          <li><strong>Every bad partition counts the same.</strong> A corrupt settlement total is worse than a late hour, and a mature budget would weight them. Unweighted is where every team starts, and it is enough to make the four decisions tonight.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the error budget as the SRE workbook defines it</span>
+      <h2>One hundred minus the promise</h2>
+      <span class="tag concept">10 min live</span>
+    </div>
+    <p class="lede">The error budget is 100 percent minus the objective, expressed as the number of bad events allowed in the window. That is the entire definition. The SRE workbook's own example is a request-driven service: a 99.9 percent objective over 3 million requests gives a budget of 3,000 allowable errors, and a single incident can be described as having consumed 13 percent of the month's budget. Swap requests for partitions and the arithmetic is identical.</p>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The arithmetic, in partitions<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Multiply the window by one minus the target. Harborlight's window is 720 partitions, so 95 percent allows 36 bad partitions, 97 percent allows 21.6, 99 percent allows 7.2 and 99.9 percent allows 0.72. A fraction of a partition is a real budget: it means the promise is broken by the first bad hour of the month.</p>
+        <p>Then spend the budget in the order the month actually happened. Night 4 costs 3. Night 9 costs 14. Night 15 costs 6. Night 21 costs 8. Night 27 costs 4. The budget is exhausted on the first night where the running total passes what was allowed, and from that night to night 30 every further bad partition is a broken promise rather than a spent one.</p>
+        <table class="clean">
+          <thead><tr><th>Promise</th><th>Budget (bad partitions allowed)</th><th>Budget left at night 30</th><th>Exhausted on night</th></tr></thead>
+          <tbody>
+            <tr><td>95 percent</td><td>36</td><td><strong>3 percent</strong></td><td>never</td></tr>
+            <tr><td>97 percent</td><td>21.6</td><td>0</td><td><strong>15</strong></td></tr>
+            <tr><td>99 percent</td><td>7.2</td><td>0</td><td><strong>9</strong></td></tr>
+            <tr><td>99.9 percent, the typical good night promised for every night</td><td>0.72</td><td>0</td><td><strong>4</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 316" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four horizontal budget bars for promises of 95, 97, 99 and 99.9 percent, drawn on one scale where 36 partitions fill the width. The same 35 bad partitions are drawn as spend across each bar, dark while inside the budget and red once past it. Vertical hairlines mark the five incident nights at cumulative spend of 3, 17, 23, 31 and 35. The 95 percent bar is never exhausted and ends with 3 percent left; 97 percent runs out on night 15, 99 percent on night 9, 99.9 percent on night 4.">
+        <style>
+          .a2aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a2aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a2aM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .a2aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a2aR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <text class="a2aH" x="14" y="26">Four promises against the same 35 bad partitions</text>
+        <text class="a2aN" x="800" y="48">runs out</text>
+
+        <text class="a2aM" x="222" y="48" text-anchor="middle">night 4</text>
+        <text class="a2aM" x="463" y="48" text-anchor="middle">night 9</text>
+        <text class="a2aM" x="566" y="48" text-anchor="middle">night 15</text>
+        <text class="a2aM" x="704" y="48" text-anchor="middle">night 21</text>
+        <text class="a2aM" x="773" y="48" text-anchor="middle">night 27</text>
+        <line x1="222" y1="54" x2="222" y2="264" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+        <line x1="463" y1="54" x2="463" y2="264" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+        <line x1="566" y1="54" x2="566" y2="264" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+        <line x1="704" y1="54" x2="704" y2="264" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+        <line x1="773" y1="54" x2="773" y2="264" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+
+        <text class="a2aH" x="14" y="78">95 percent</text>
+        <text class="a2aM" x="14" y="91">budget 36</text>
+        <rect x="170" y="64" width="620" height="30" rx="4" fill="#CBD5E1"></rect>
+        <rect x="170" y="71" width="603" height="16" rx="3" fill="#1E293B"></rect>
+        <text class="a2aN" x="800" y="83">never</text>
+
+        <text class="a2aH" x="14" y="130">97 percent</text>
+        <text class="a2aM" x="14" y="143">budget 21.6</text>
+        <rect x="170" y="116" width="372" height="30" rx="4" fill="#CBD5E1"></rect>
+        <rect x="170" y="123" width="372" height="16" rx="3" fill="#1E293B"></rect>
+        <rect x="542" y="123" width="231" height="16" rx="3" fill="#991B1B"></rect>
+        <text class="a2aR" x="800" y="135">night 15</text>
+
+        <text class="a2aH" x="14" y="182">99 percent</text>
+        <text class="a2aM" x="14" y="195">budget 7.2</text>
+        <rect x="170" y="168" width="124" height="30" rx="4" fill="#CBD5E1"></rect>
+        <rect x="170" y="175" width="124" height="16" rx="3" fill="#1E293B"></rect>
+        <rect x="294" y="175" width="479" height="16" rx="3" fill="#991B1B"></rect>
+        <text class="a2aR" x="800" y="187">night 9</text>
+
+        <text class="a2aH" x="14" y="234">99.9 percent</text>
+        <text class="a2aM" x="14" y="247">budget 0.72</text>
+        <rect x="170" y="220" width="12" height="30" rx="4" fill="#CBD5E1"></rect>
+        <rect x="170" y="227" width="12" height="16" rx="3" fill="#1E293B"></rect>
+        <rect x="182" y="227" width="591" height="16" rx="3" fill="#991B1B"></rect>
+        <text class="a2aR" x="800" y="239">night 4</text>
+
+        <rect x="14" y="290" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a2aN" x="38" y="302">Grey is budget, dark is spend, red is spend after the budget ran out. 95 percent ends with 3 percent left.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the same month spent against four budgets, and the night each one ran out.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>95 percent: the floor the history actually supports<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Thirty-six bad partitions allowed, thirty-five spent, 3 percent of the budget left at night 30. That is one partition of headroom, which is to say the month was kept by the width of a single late hour. As a business decision, 95 percent says: we promise what we have demonstrably delivered, and improvement is funded as a separate line rather than smuggled in as a promise.</p>
+        <p>The objection is always that 95 sounds low. It is the only row in the table where the team's word held for thirty nights. A promise that sounds better and breaks on night 15 is not a higher standard; it is a lower one with better marketing.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>97 percent: the stretch that has to be paid for first<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A budget of 21.6 partitions, which the month spent by night 15 when the corrupt batch took the running total from 17 to 23. Half the month in breach. As a business decision, 97 percent is affordable only if one whole class of incident is removed before the promise is made: the upstream outage on night 9 alone cost 14 of the 21.6, so a retry-and-hold arrangement with the upstream team that turns an outage into a late load is what buys this target, and it has to be in place before the number is said aloud, not after.</p>
+        <p>Said the other way: 97 percent is a promise about work that has not been done yet. That can be a fine promise, if the work is funded, owned and dated. Without those three it is a hope with a percent sign.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>99 percent: the promise the pipeline has never kept<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A budget of 7.2 partitions, gone on night 9 when the upstream outage landed 14 in a single night. Two thirds of the month in breach, and the budget was on track to fail even without the outage: night 4's late load had already spent 3 of 7.2 in the first week. As a business decision, 99 percent is what "basically 99" was all along, a number chosen because it sounded like the kind of number reliable things have.</p>
+        <p>The cost is not the breach itself. It is what happens in month two, when the team stops reporting against a number it can never meet, the reader stops believing any number the team says, and the pipeline is back to being "reliable" in word only. A target the history cannot support does not raise reliability; it retires the measurement.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>99.9 percent: the good night promised for every night<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A budget of 0.72 partitions, less than one, gone on night 4 by the first late load of the month. On a typical good night Harborlight lands every partition, so 99.9 percent feels like a description of the pipeline rather than a stretch. It is a description of the median night, promised for all thirty, and the first bad hour breaks it before the first week is out.</p>
+        <p>As a business decision this is the one that looks like ambition and behaves like a resignation: twenty-six nights of the month spent in breach, and a team that learns within the first week that the number on the slide has nothing to do with anything they can affect. The literature's warning against picking a target from current performance is aimed exactly here.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the budget as a decision rule and what spends it</span>
+      <h2>What you buy with the budget, and what spends it</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">A budget you only look at after the month is a scorecard. A budget you look at before every release is a decision. The difference is one rule, written down in advance and agreed by the people who ship changes and the people who read the output, so that the night the pipeline is burning nobody has to negotiate.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A decision gate. On the left, budget remaining checked every Monday. Two arrows lead to two states: healthy, more than half the budget left and no incident open, which leads to ship the change; and burning, on track to run out before night 30 or already out, which leads to stop and harden with no releases to the pipeline until the budget is back above the line. A note says the rule is written before the month starts.">
+        <style>
+          .a2bT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a2bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a2bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a2bW { font: 400 11px Inter, sans-serif; fill: #fff; }
+          .a2bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a2bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a2bR { font: 800 12px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <defs>
+          <marker id="a2bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <rect x="14" y="100" width="210" height="80" rx="10" fill="#0F172A"></rect>
+        <text class="a2bT" x="119" y="132" text-anchor="middle">Budget remaining</text>
+        <text class="a2bW" x="119" y="150" text-anchor="middle">checked every Monday,</text>
+        <text class="a2bW" x="119" y="166" text-anchor="middle">before any release</text>
+
+        <line x1="228" y1="128" x2="294" y2="70" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a2bAr)"></line>
+        <line x1="228" y1="152" x2="294" y2="212" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a2bAr)"></line>
+
+        <rect x="300" y="34" width="240" height="72" rx="10" fill="#CBD5E1"></rect>
+        <text class="a2bH" x="312" y="58">Healthy</text>
+        <text class="a2bB" x="312" y="78">more than half the budget left</text>
+        <text class="a2bB" x="312" y="94">and no incident open</text>
+
+        <rect x="300" y="176" width="240" height="72" rx="10" fill="#94A3B8"></rect>
+        <text class="a2bH" x="312" y="200">Burning</text>
+        <text class="a2bB" x="312" y="220">on track to run out before</text>
+        <text class="a2bB" x="312" y="236">night 30, or already out</text>
+
+        <line x1="544" y1="70" x2="604" y2="70" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a2bAr)"></line>
+        <line x1="544" y1="212" x2="604" y2="212" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a2bAr)"></line>
+
+        <rect x="610" y="34" width="256" height="72" rx="10" fill="#1E293B"></rect>
+        <text class="a2bT" x="622" y="58">Ship the change</text>
+        <text class="a2bW" x="622" y="78">the budget pays for the risk;</text>
+        <text class="a2bW" x="622" y="94">that is what it is for</text>
+
+        <rect x="610" y="176" width="256" height="72" rx="10" fill="#F1F5F9" stroke="#991B1B" stroke-width="1.5"></rect>
+        <text class="a2bR" x="622" y="200">Stop and harden</text>
+        <text class="a2bB" x="622" y="220">no releases to the pipeline until</text>
+        <text class="a2bB" x="622" y="236">the budget is back above the line</text>
+
+        <rect x="14" y="272" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a2bN" x="38" y="284">The rule is written before the month starts. A rule invented on the night is a negotiation, not a rule.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the budget as a gate: healthy ships, burning stops, and the rule was agreed in advance.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The currency that decides between shipping and hardening<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every pipeline has two queues competing for the same engineers: changes the business asked for, and work that makes the pipeline fail less. Without a budget the choice between them is made by whoever shouted most recently. With a budget the choice is made by a rule agreed before anyone was shouting.</p>
+        <ul>
+          <li><strong>Budget healthy:</strong> ship. The budget exists to be spent on risk, and a team that ends every month with 90 percent of its budget unspent is over-hardening a pipeline the reader was already happy with.</li>
+          <li><strong>Budget burning:</strong> stop and fix. No releases to the pipeline until the budget is back above the line, and the engineers who would have shipped the change work the incident's action items instead.</li>
+          <li><strong>The rule is agreed in advance,</strong> by the people who ship and the people who read, and it names the threshold. "Burning" is not a mood; it is a line on the chart that everybody can see.</li>
+        </ul>
+        <div class="prompt-box good">
+          <span class="label">★ Harborlight's shipping rule, as agreed with the settlement lead</span>
+Target: 95 percent of hourly orders partitions good over a rolling 30 nights, which is a budget of 36.
+Every Monday the platform lead reports budget remaining as a count and a percent.
+While more than half the budget remains and no incident is open, changes to the orders pipeline ship on their normal schedule.
+When the budget is on track to run out before night 30, or has run out, no change ships to the orders pipeline until the budget is back above half. The release engineers work the open incident actions instead.
+An upstream outage spends the budget like any other incident. Whose fault it was is a question for the postmortem, not for the rule.
+        </div>
+        <div class="prompt-box bad">
+          <span class="label">✕ The version that is not a rule</span>
+We will monitor the error budget closely and make release decisions on a case-by-case basis in consultation with stakeholders.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The five incidents as spend, and the spend that was not yours to prevent<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Describing an incident in budget terms is the single most useful thing a leader can do with the arithmetic, because it turns "there was an outage" into "that cost us two thirds of the month". Against the 97 percent budget of 21.6 partitions:</p>
+        <table class="clean">
+          <thead><tr><th>Night</th><th>Incident</th><th>Bad partitions</th><th>Share of a 97 percent budget</th></tr></thead>
+          <tbody>
+            <tr><td>4</td><td>Late load</td><td>3</td><td>about 14 percent</td></tr>
+            <tr><td>9</td><td>Upstream outage</td><td><strong>14</strong></td><td><strong>about two thirds, in one night</strong></td></tr>
+            <tr><td>15</td><td>Corrupt batch, on time and wrong</td><td>6</td><td>about 28 percent; the budget ran out here</td></tr>
+            <tr><td>21</td><td>Flapping connector, scattered</td><td>8</td><td>about 37 percent, all of it in breach</td></tr>
+            <tr><td>27</td><td>Partial load</td><td>4</td><td>about 19 percent, all of it in breach</td></tr>
+          </tbody>
+        </table>
+        <p>Night 9 is the honest limit of the whole exercise. The upstream source was down; nothing the Harborlight team did or could have done that night would have landed those fourteen partitions. The budget still pays for them, because the reader did not get her hours and the reader does not care whose fault that was. Some spend is not yours to prevent. It is still yours to promise around, which is why the target has to leave room for the upstream's bad month as well as your own.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The trap of setting the target from current performance<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The SRE book's first piece of advice on choosing a target is "don't pick based on current performance". It sounds like a contradiction of everything above, since the whole session has been about reading the history. It is not. The trap is picking the number the pipeline happens to produce, whether that is the typical good night or last month's exact figure, without asking two other questions: what does the reader actually need, and what will the team be able to keep saying out loud in month three.</p>
+        <p>The 99.9 percent row is the trap in its purest form: the current good night, promised as a target. But so is copying 95.14 onto the slide as if a measurement were a decision. The measured number is the ceiling on what can be honestly promised. The target is chosen underneath it, from the reader's sentence and the work that is funded. The book's companion advice is the way out: it is "better to start with a loose target that you tighten" than to start strict and quietly stop reporting. Promise 95, keep it for three months, fund the upstream arrangement, and then tighten to 97 with the history to show for it.</p>
+        <div class="callout tip">
+          <p><strong>A target you tighten is a track record.</strong> A target you loosen is an admission. Choose the first one on purpose, even when the loose number feels embarrassing on the slide.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The window: rolling, not calendar<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The budget is computed over a window, and the choice of window is a leadership decision disguised as a technical one. A calendar month resets the budget to full at midnight on the first, which teaches every team in the building to ship its riskiest changes on the second. A rolling thirty nights never resets: night 9's outage stays in the window until night 39, and the team has to live with the spend it caused for a full month.</p>
+        <ul>
+          <li><strong>Rolling</strong> makes the budget honest and makes the shipping rule bite continuously. It is the default worth insisting on.</li>
+          <li><strong>Calendar</strong> is easier to report to finance and is what many platforms compute by default. If that is what you have, know that "budget remaining" on the 2nd of the month means almost nothing.</li>
+          <li><strong>Whichever you use, say which,</strong> on the slide, every time. Two people quoting budget remaining over different windows are two people about to have an argument nobody can win.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Spend one budget</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">No code, a pen and last month. Bring the page from session 1: the pipeline, the measured number, the reader's sentence. If your measured number was an estimate, this works with the estimate. If you brought nothing, Harborlight's 35 bad partitions in five incidents are on the table above.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Take last month's bad-event count for the pipeline.</strong> And the incidents it came in, as a list with a date and a count each. Harborlight's is 35 in five incidents: 3, 14, 6, 8 and 4, on nights 4, 9, 15, 21 and 27. Write the running total next to each: 3, 17, 23, 31, 35.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute the budget at three candidate targets.</strong> Total events in the window times one minus the target. Pick one target at or just below the measured number, one a step above, and one that somebody in the building has already said out loud. For Harborlight: 95 gives 36, 97 gives 21.6, 99 gives 7.2.</p>
+      </div>
+      <div class="step">
+        <p><strong>Find the night each would have run out.</strong> Walk down the running total and stop at the first incident that passes each budget. 36 is never passed. 21.6 is passed at 23, night 15. 7.2 is passed at 17, night 9. Write the exhaustion night, and how many nights of the month were spent in breach, next to each target.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the shipping rule you would agree in advance.</strong> One paragraph, in the shape of Harborlight's above: the target and its budget as a count, who reports it and when, the line that means healthy, the line that means burning, and what stops when it is burning. Name the person who reads the output as a party to it.</p>
+      </div>
+      <div class="step">
+        <p><strong>Pick the loosest target the reader can live with, and write why.</strong> Not the one that looks best on a slide. Read the reader's sentence from session 1 and ask which of the three targets satisfies it with the honest morning message included. Write the reason in one line under the number: at Harborlight, "95 percent, because the settlement lead needs to be told what is missing by eight, not to have nothing missing, and the history has kept 95 for thirty nights".</p>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Resist the middle number.</strong> Faced with 95, 97 and 99, most rooms choose 97 as a compromise. Look at its row first: at Harborlight it is exhausted on night 15 unless the upstream arrangement is funded. A compromise between an honest number and a wish is still a wish.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 3</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Take the shipping rule to the person who reads the output and the person who ships changes. Change it until both would sign it. Note what each of them changed.</li>
+      <li>For last month's incidents, write each one as a share of the budget you chose: "night 9 cost 39 percent of the month" rather than "there was an outage". Keep the list; it is the opening of the postmortem session.</li>
+      <li>Find out whether your platform computes the window rolling or by calendar month. Write it on the page next to the target.</li>
+      <li>Ask the on-call engineer how many times they were paged last month, and how many of those pages were the first they had heard of an incident. Bring both numbers to the next session.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Harborlight promises 97 percent over 720 partitions. The month's incidents cost 3, 14, 6, 8 and 4 on nights 4, 9, 15, 21 and 27. When does the budget run out?</p>
+      <button class="qopt" type="button">A · Night 9, because the outage alone is 14 partitions</button>
+      <button class="qopt" type="button">B · Night 15, because the budget is 21.6 and the running total passes it when the corrupt batch takes it from 17 to 23</button>
+      <button class="qopt" type="button">C · Never, because 97 percent is above the measured 95.14</button>
+      <p class="qwhy">100 minus 97 is 3 percent of 720, which is 21.6 bad partitions. After night 9 the total is 17, still inside. Night 15 takes it to 23. A promise above the measured number does not add budget; it removes it.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">The budget is half spent by night 10 with an incident still open. A change the business has been waiting for is ready to ship. What does the rule say?</p>
+      <button class="qopt" type="button">A · Ship it, because the business asked for it</button>
+      <button class="qopt" type="button">B · Escalate to whoever is most senior in the room</button>
+      <button class="qopt" type="button">C · Hold the change and work the incident actions, because that is what the shipping rule agreed in advance says a burning budget means</button>
+      <p class="qwhy">The whole value of the rule is that it was agreed before anyone was under pressure. A budget consulted only after the month is a scorecard; a budget consulted before every release is a decision.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Why is 99.9 percent the wrong target for a pipeline whose typical good night lands every partition?</p>
+      <button class="qopt" type="button">A · Because it is the current good night promised for every night, so the budget is 0.72 partitions and the first late load exhausts it on night 4</button>
+      <button class="qopt" type="button">B · Because three nines is reserved for request-driven services</button>
+      <button class="qopt" type="button">C · Because the budget cannot be a fraction of a partition</button>
+      <p class="qwhy">"Don't pick based on current performance" is the literature's first piece of target advice. A median night is a description, not a promise, and it is broken before the first week is out. Better to start loose and tighten with the history to show for it.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE workbook, Implementing SLOs - error budget as 100 percent minus the SLO</span>
+        <span class="note">The 3 million requests, 3,000 errors example and one incident consuming 13 percent of a budget, then the same arithmetic in partitions.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book, Service Level Objectives - choosing a target</span>
+        <span class="note">"Don't pick based on current performance" and "better to start with a loose target that you tighten", both applied to the 99.9 percent row.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Harborlight's month at 95, 97, 99 and 99.9 percent</span>
+        <span class="note">Budgets of 36, 21.6, 7.2 and 0.72; 3 percent left at 95; exhausted on nights 15, 9 and 4. The budget as the currency behind the shipping rule.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Burn rate and what pages the on-call</span>
+        <span class="note">Named only. Session 3 owns the pager; the budget tonight is a monthly quantity, not an hourly alarm.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Weighting bad partitions by impact</span>
+        <span class="note">Named as the first refinement. Every partition counts the same in tonight's arithmetic.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">How a bad partition is detected</span>
+        <span class="note">Not covered by design. The data observability course owns detection; here a bad partition only has to be counted and paid for.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 2 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Budget = 100 minus the promise</b><span>As a count of bad events in the window. 720 partitions at 95 percent is 36.</span></div>
+      <div class="cheat-item"><b>A promise is a permission</b><span>Agreed failure is a resource to spend on risk, not a threat to stay above.</span></div>
+      <div class="cheat-item"><b>Four budgets, one month</b><span>36 / 21.6 / 7.2 / 0.72. Never / night 15 / night 9 / night 4.</span></div>
+      <div class="cheat-item"><b>95 kept, by one partition</b><span>35 spent of 36, 3 percent left. The only row where the word held for thirty nights.</span></div>
+      <div class="cheat-item"><b>Healthy ships, burning stops</b><span>The rule is agreed in advance and names the line. Burning is not a mood.</span></div>
+      <div class="cheat-item"><b>Night 9 was two thirds</b><span>14 partitions against a 97 budget, upstream, not preventable, still paid for.</span></div>
+      <div class="cheat-item"><b>Not from current performance</b><span>The good night promised every night is 99.9 and gone on night 4.</span></div>
+      <div class="cheat-item"><b>Loose, then tighten</b><span>A target you tighten is a track record. One you loosen is an admission.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Leader session 2 of 6 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="a1-promise-with-a-number.html">← Leader session 1 · A promise with a number</a>
+      <a href="a3-on-call-is-a-design.html">Leader session 3 · On-call is a design, not a rota →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

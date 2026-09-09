@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 1 of 8. Turning a pipeline into good and bad events: the SLI menu for data processing (freshness, correctness, coverage), the specification-versus-implementation split, and the measured truth about Harborlight's orders pipeline: 95.14 percent, not the 99 everybody assumed.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="SLIs for one pipeline - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 1 of 8. Before a promise, a measurement. 720 partitions, 35 bad, 95.14 percent.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b1-slis-for-one-pipeline.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SLIs for one pipeline - learn data reliability with phoebe">
+<meta name="twitter:description" content="Good event, bad event, and the number the pipeline actually delivered last month.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 1 · SLIs for one pipeline - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 1 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 1 of 8</div>
+    <h1>SLIs for <span class="accent">one pipeline</span></h1>
+    <p class="sub">Every reliability conversation that goes badly goes badly for the same reason: somebody made a promise before anybody made a measurement. Tonight is the measurement. You take one pipeline, decide what a good event and a bad event are, write the three indicators that the service-reliability literature says a data pipeline needs, and run them over thirty nights of real history. Harborlight's team believed their orders pipeline was "basically 99 percent". It was 95.14, and the difference is a month of unkept promises.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Foundational</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip audience">Anyone who has been asked "is the data reliable"</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · Good events, bad events, three indicators</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: measure one pipeline</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>How the builder track works</h2>
+    </div>
+    <p class="lede">Eight sessions, 45 minutes each, one artifact: a <strong>reliability contract</strong> for one pipeline that you have measured, promised, alerted on and reported. Tonight the indicators. Then the target in session 2, the error budget and burn-rate alerts in session 3, runbooks in session 4, backfills in session 5, the incident package in session 6, toil in session 7, and in session 8 the whole contract is replayed over thirty nights on call. The pipeline throughout is <strong>orders</strong> at Harborlight, a marketplace whose hourly partitions feed a settlement report that somebody has to sign.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Three working indicator queries for a pipeline you own, using the freshness, correctness and coverage menu. The distinction between what you decided to measure and how you happened to measure it, which is where most indicators quietly lie. And a single honest number for last month that nobody in your team currently knows.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why "good event or bad event" before anything else<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>An indicator is a ratio: good events over total events. Everything downstream - the target, the budget, the alert, the report - is arithmetic on that ratio. So the only design decision that matters tonight is what counts as one event and what makes it bad. Get that right and the rest is a spreadsheet; get it wrong and the rest is a spreadsheet about the wrong thing.</p>
+        <p>For a request-driven service the event is obvious: one request. For a pipeline it is not, and the wrong answer is "one run per night", because a run that lands 23 of 24 partitions is not the same failure as one that lands none. Harborlight's event is one hourly partition, which gives 720 events a month and enough resolution to see a partial load as partial.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight reported "27 of 30 nightly runs succeeded" and called it 90 percent. Counting partitions, the same month was 685 of 720 good, or 95.14 percent. Same pipeline, two numbers, and neither team had noticed they were measuring different things until the settlement report was late on a night the run had "succeeded".</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary for the whole track<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>SLI</strong> - service level indicator, a carefully defined quantitative measure of some aspect of the service. Tonight.</li>
+          <li><strong>SLO</strong> - service level objective, a target value or range for an SLI. Session 2.</li>
+          <li><strong>SLA</strong> - service level agreement, a contract with consequences for missing the SLO. If there is no explicit consequence, it is an SLO with a grander name.</li>
+          <li><strong>Error budget</strong> - one hundred percent minus the SLO, expressed as the number of bad events you are allowed in the window. Session 3.</li>
+          <li><strong>Burn rate</strong> - how fast the budget is being spent relative to the rate that would exactly exhaust it at the end of the window. Session 3 pages on it.</li>
+          <li><strong>Specification versus implementation</strong> - what you decided to measure, against how you happened to measure it. The gap between them is where indicators lie. Part 2.</li>
+          <li><strong>Window</strong> - the period over which the ratio is computed. Thirty nights here, rolling, because a calendar month resets the budget at midnight on the first and teaches everybody to ship on the second.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the SLI menu for data processing</span>
+      <h2>Three indicators a pipeline needs, and one it borrows from storage</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">The service-reliability literature gives data processing systems a short menu, and the shortness is the point. Freshness, correctness and coverage between them describe every way a pipeline can let a reader down. Durability is borrowed from storage for the copy you would restore from.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four lanes: freshness, correctness, coverage and durability. Each lane gives the indicator's definition as a proportion, what makes an event bad, and which of Harborlight's five incidents it would have counted.">
+        <style>
+          .b1aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .b1aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b1aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .b1aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b1aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <rect x="14" y="20" width="200" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="b1aT" x="114" y="42" text-anchor="middle">Freshness</text>
+        <rect x="14" y="60" width="200" height="210" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b1aB" x="26" y="84">proportion of data updated</text>
+        <text class="b1aB" x="26" y="100">more recently than a</text>
+        <text class="b1aB" x="26" y="116">time threshold</text>
+        <text class="b1aM" x="26" y="150">bad: partition landed</text>
+        <text class="b1aM" x="26" y="166">after its hour</text>
+        <text class="b1aH" x="26" y="204">counts: late load,</text>
+        <text class="b1aH" x="26" y="220">outage, partial load</text>
+
+        <rect x="230" y="20" width="200" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="b1aT" x="330" y="42" text-anchor="middle">Correctness</text>
+        <rect x="230" y="60" width="200" height="210" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b1aB" x="242" y="84">proportion of records in</text>
+        <text class="b1aB" x="242" y="100">that produced the correct</text>
+        <text class="b1aB" x="242" y="116">value out</text>
+        <text class="b1aM" x="242" y="150">bad: partition on time,</text>
+        <text class="b1aM" x="242" y="166">values wrong</text>
+        <text class="b1aH" x="242" y="204">counts: corrupt batch</text>
+
+        <rect x="446" y="20" width="200" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="b1aH" x="546" y="42" text-anchor="middle">Coverage</text>
+        <rect x="446" y="60" width="200" height="210" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b1aB" x="458" y="84">proportion of jobs that</text>
+        <text class="b1aB" x="458" y="100">processed above a target</text>
+        <text class="b1aB" x="458" y="116">amount of data</text>
+        <text class="b1aM" x="458" y="150">bad: partition landed</text>
+        <text class="b1aM" x="458" y="166">with a shard missing</text>
+        <text class="b1aH" x="458" y="204">counts: partial load,</text>
+        <text class="b1aH" x="458" y="220">flapping connector</text>
+
+        <rect x="662" y="20" width="204" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="b1aH" x="764" y="42" text-anchor="middle">Durability (storage)</text>
+        <rect x="662" y="60" width="204" height="210" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b1aB" x="674" y="84">proportion of records</text>
+        <text class="b1aB" x="674" y="100">written that can be</text>
+        <text class="b1aB" x="674" y="116">read back</text>
+        <text class="b1aM" x="674" y="150">bad: a backup that</text>
+        <text class="b1aM" x="674" y="166">does not restore</text>
+        <text class="b1aH" x="674" y="204">counts: none this</text>
+        <text class="b1aH" x="674" y="220">month, tested anyway</text>
+
+        <rect x="14" y="300" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b1aN" x="38" y="312">Harborlight's five incidents are all counted by the first three. That is the menu doing its job.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the data-processing menu, and which incident each indicator would have counted.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Freshness: on time is a property of the partition, not the run<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The indicator is the proportion of partitions that landed before their deadline. Harborlight's deadline is the end of the hour the partition belongs to plus a grace period agreed with the settlement team, and the whole indicator is one comparison per partition.</p>
+        <div class="prompt-box good">
+          <span class="label">★ Try it now</span>
+select
+  count(*)                                                     as partitions,
+  count_if(landed_at &lt;= partition_hour + interval '60 minute') as fresh,
+  fresh / partitions::float                                    as freshness_sli
+from ops.orders_partition_log
+where partition_hour &gt;= dateadd('day', -30, current_timestamp);
+        </div>
+        <p>Two things to notice. The window is a rolling thirty days, not a calendar month. And the grace period is part of the indicator's <em>specification</em>: change it and you have changed what you are measuring, which is fine as long as everybody knows you did.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Correctness: the indicator that catches on-time and wrong<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Harborlight's night 15 landed every partition on time with a currency column that had arrived as text. Freshness said perfect. The settlement report was wrong for six hours. Correctness is the indicator for that class of failure, and it needs a definition of "correct" that a query can check: a type, a range, a reconciliation against a control total, or a comparison with a trusted source.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The control total that caught night 15 was already being computed by finance in a spreadsheet every morning. Turning it into a correctness indicator was one query and a column. The pipeline did not get more reliable that week; it got measured, which is what let the next six sessions happen.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Coverage and durability: the two that are easy to skip<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Coverage</strong> asks whether a partition processed roughly as much data as it should have. Night 27 landed four partitions on time and correct, each with one of three shards missing. Freshness and correctness both passed. Coverage is the indicator for a partial load, and it is usually the row count against the same hour last week.</li>
+          <li><strong>Durability</strong> comes from the storage menu: the proportion of what was written that can be read back. For a pipeline it means the restore point. Nobody counts a bad durability event until the night they need one, so the indicator is a restore test on a schedule rather than a query over history.</li>
+          <li><strong>Why not throughput?</strong> It is on the menu and it matters for capacity, but it does not describe a way the reader was let down. Fewer indicators with business meaning beat more indicators with dashboards.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers specification against implementation</span>
+      <h2>What you decided to measure, and how you happened to</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">The indicator's <strong>specification</strong> is the outcome you care about, stated without reference to any system: partitions available to the settlement team within an hour. The <strong>implementation</strong> is where you read it from: the orchestrator's success flag, the warehouse's load timestamp, a probe that queries the table, or the settlement team's own experience. Same specification, four implementations, four different numbers.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One specification at the top, partitions available to the reader within an hour, fanning out to four implementations: orchestrator success flag, warehouse load timestamp, a reader-side probe, and the settlement team's report. Each is scored on quality, coverage and cost, and the probe is marked as closest to the user.">
+        <style>
+          .b1bT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .b1bH { font: 800 11px Inter, sans-serif; fill: #0B1220; }
+          .b1bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .b1bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b1bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b1bR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <defs>
+          <marker id="b1bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <rect x="230" y="20" width="420" height="40" rx="9" fill="#0F172A"></rect>
+        <text class="b1bT" x="440" y="45" text-anchor="middle">Specification: partitions readable by settlement within the hour</text>
+
+        <line x1="330" y1="62" x2="120" y2="106" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b1bAr)"></line>
+        <line x1="400" y1="62" x2="340" y2="106" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b1bAr)"></line>
+        <line x1="480" y1="62" x2="540" y2="106" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b1bAr)"></line>
+        <line x1="550" y1="62" x2="760" y2="106" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b1bAr)"></line>
+
+        <rect x="14" y="110" width="200" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="b1bH" x="114" y="132" text-anchor="middle">orchestrator success flag</text>
+        <text class="b1bB" x="26" y="168">cheap, already there</text>
+        <text class="b1bR" x="26" y="186">blind to partial and wrong</text>
+        <text class="b1bM" x="26" y="204">"27 of 30" came from here</text>
+
+        <rect x="234" y="110" width="200" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="b1bH" x="334" y="132" text-anchor="middle">warehouse load timestamp</text>
+        <text class="b1bB" x="246" y="168">per partition, cheap</text>
+        <text class="b1bR" x="246" y="186">blind to wrong values</text>
+        <text class="b1bM" x="246" y="204">the freshness query above</text>
+
+        <rect x="454" y="110" width="200" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="b1bT" x="554" y="132" text-anchor="middle">reader-side probe</text>
+        <text class="b1bB" x="466" y="168">queries as the reader would</text>
+        <text class="b1bB" x="466" y="186">sees fresh, correct, covered</text>
+        <text class="b1bM" x="466" y="204">costs a query an hour</text>
+
+        <rect x="674" y="110" width="192" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="b1bH" x="770" y="132" text-anchor="middle">the settlement team says</text>
+        <text class="b1bB" x="686" y="168">the truth, eventually</text>
+        <text class="b1bR" x="686" y="186">days late, no history</text>
+        <text class="b1bM" x="686" y="204">what an SLA is measured on</text>
+
+        <rect x="14" y="258" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b1bN" x="38" y="270">Closest to the reader wins. The success flag is the cheapest implementation and the one that lied.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - one specification, four implementations, four numbers.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The implementation that lied, and the one that cost a query an hour<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The orchestrator's success flag is where nearly every team starts, because it already exists. It measures whether the job exited zero, which is a fact about the job. The specification is a fact about the reader. Night 27's partial load exited zero four times; night 15's corrupt batch exited zero six times. Ten bad partitions the flag counted as good, which is the entire gap between "basically 99" and 95.14.</p>
+        <p>The reader-side probe is the honest implementation: a scheduled query that asks the table what the settlement team would ask it, an hour after each partition is due. It costs something, it needs maintaining, and it is the only implementation that sees all three indicators from where the damage happens.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Write the specification down before the query<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>One sentence, no system names: <em>"Each hourly orders partition is readable by the settlement report, with reconciled totals and all three shards, within 60 minutes of the hour."</em> Everything a query needs is in that sentence and nothing that a query would smuggle in is.</p>
+        <ul>
+          <li><strong>It survives a platform change.</strong> Swap orchestrators and the sentence is still true or false. The success-flag implementation would have to be rewritten and would silently measure something different.</li>
+          <li><strong>It is what the leader track reports against.</strong> Nobody signs off on a load timestamp. They sign off on the settlement report being right.</li>
+          <li><strong>It exposes the grace period as a decision.</strong> Sixty minutes was negotiated with the people who read the report. Change it in the sentence, not in the query.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Measure one pipeline for last month</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">Bring a pipeline that somebody reads. If you have nothing to hand, use Harborlight's partition log: 30 nights, 24 partitions a night, 720 events, with five incidents in it that you do not yet know the dates of.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Write the specification sentence.</strong> Who reads it, what they need, by when. No system names. Read it to somebody who reads the output and change it until they agree.</p>
+      </div>
+      <div class="step">
+        <p><strong>Choose the event.</strong> A partition, a file, a batch - the smallest unit a reader would notice missing. For Harborlight it is the hourly partition, which is why the month has 720 events rather than 30.</p>
+      </div>
+      <div class="step">
+        <p><strong>Build the partition log if it does not exist.</strong> One row per event: partition hour, landed at, row count, reconciled flag, shard count. Session 3's alerts and session 8's replay read this table, so its shape matters more than tonight's numbers do.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the three queries.</strong> Freshness as landed-before-deadline, correctness as reconciled, coverage as row count within tolerance of the same hour last week. Each returns good, total and the ratio over a rolling 30 days.</p>
+      </div>
+      <div class="step">
+        <p><strong>Combine them into one good-event definition.</strong> A partition is good when all three pass. Run it. Harborlight's answer is 685 of 720, which is 95.14 percent, and the 35 bad partitions cluster into five incidents on nights 4, 9, 15, 21 and 27.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compare with what the team believed.</strong> Write both numbers down next to each other, with the implementation each came from. That pair of numbers is the opening slide of leader session 1, and it is the reason the rest of the track exists.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ The combined indicator</span>
+with events as (
+  select partition_hour,
+         landed_at &lt;= partition_hour + interval '60 minute'          as fresh,
+         reconciled                                                   as correct,
+         row_count &gt;= 0.9 * lag(row_count, 168) over (order by partition_hour) as covered
+  from ops.orders_partition_log
+  where partition_hour &gt;= dateadd('day', -30, current_timestamp)
+)
+select count(*)                                    as total,
+       count_if(fresh and correct and covered)     as good,
+       good / total::float                         as sli
+from events;
+-- Harborlight, last 30 nights: total 720, good 685, sli 0.9514
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Do not set a target tonight.</strong> The number you just computed is the only input session 2 needs, and setting a target before you have it is how teams end up promising 99 percent to a pipeline that delivers 95.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 2</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Get the partition log recording for one pipeline and backfill it as far as your warehouse's history allows. Ninety days is enough to set a target from; thirty is the minimum.</li>
+      <li>Run the combined indicator and write down the number. Then write down what the team believed it was, and where that belief came from.</li>
+      <li>Read the specification sentence to the person who signs the report. Note every word they changed.</li>
+      <li>Find the ten worst events in the window and group them into incidents by hand. You will need the incident list in session 3 and the grouping is harder than it looks.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Harborlight's orchestrator reported 27 of 30 runs succeeded. Counting partitions gave 685 of 720. Why do the two numbers differ?</p>
+      <button class="qopt" type="button">A · The orchestrator counts weekends differently</button>
+      <button class="qopt" type="button">B · The success flag measures whether the job exited cleanly, so partial and corrupt partitions that exited zero counted as good</button>
+      <button class="qopt" type="button">C · Partitions are a finer unit, so the percentage is always lower</button>
+      <p class="qwhy">Night 27's partial load and night 15's corrupt batch both exited zero. Ten bad partitions the flag counted as good is the whole gap between "basically 99" and 95.14.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">Night 15 landed every partition on time with a currency column arrived as text. Which indicator counts it?</p>
+      <button class="qopt" type="button">A · Freshness, because a wrong partition is effectively late</button>
+      <button class="qopt" type="button">B · Coverage, because the row count would differ</button>
+      <button class="qopt" type="button">C · Correctness, which is the indicator for on time and wrong; freshness and coverage both pass</button>
+      <p class="qwhy">On-time-and-wrong is a distinct failure class. Without a correctness indicator the pipeline scores perfectly on a night the settlement report was wrong for six hours.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Why write the indicator's specification as one sentence with no system names before writing the query?</p>
+      <button class="qopt" type="button">A · Because the specification is about the reader's outcome and survives a platform change, while any query smuggles in the system it reads from</button>
+      <button class="qopt" type="button">B · Because auditors require a plain-language version</button>
+      <button class="qopt" type="button">C · Because queries cannot express deadlines</button>
+      <p class="qwhy">The same specification has four implementations with four different numbers. Writing it first is what lets you notice that the cheapest implementation measured the job rather than the reader.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE workbook, Implementing SLOs - the SLI menu for data processing</span>
+        <span class="note">Freshness, correctness and coverage as documented, durability borrowed from storage, and the specification-versus-implementation split.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book, Service Level Objectives - the SLI, SLO and SLA definitions</span>
+        <span class="note">Quoted in the vocabulary card. Target selection and error budgets are sessions 2 and 3.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Choosing the target</span>
+        <span class="note">Deliberately not tonight. Session 2 sets it from the number you computed here.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Detection thresholds and monitors</span>
+        <span class="note">The data observability course owns how a bad partition gets noticed. Here it only has to be counted.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. That is the AI observability course; this track is tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 1 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>An SLI is a ratio</b><span>Good events over total events. Decide the event first; everything else is arithmetic.</span></div>
+      <div class="cheat-item"><b>The event is the partition</b><span>Not the run. 720 events a month sees a partial load as partial.</span></div>
+      <div class="cheat-item"><b>Three indicators</b><span>Freshness, correctness, coverage. Durability from storage for the restore point.</span></div>
+      <div class="cheat-item"><b>Specification first</b><span>One sentence, no system names, agreed with the reader.</span></div>
+      <div class="cheat-item"><b>The success flag lies</b><span>It measures the job. Ten bad partitions exited zero at Harborlight.</span></div>
+      <div class="cheat-item"><b>Closest to the reader wins</b><span>A probe that queries as the reader would sees all three indicators.</span></div>
+      <div class="cheat-item"><b>Rolling window</b><span>Thirty days, rolling. A calendar month teaches everybody to ship on the second.</span></div>
+      <div class="cheat-item"><b>95.14, not 99</b><span>Measure before you promise. The gap is a month of broken promises.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 1 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="../index.html">← All sessions</a>
+      <a href="b2-slos-from-history.html">Builder session 2 · SLOs from history →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

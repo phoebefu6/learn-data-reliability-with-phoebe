@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Leader session 5 of 6. Backfills and reliability debt as work that belongs in the error budget conversation: the three costs a backfill carries, why a changed signed number is a governance event, and the one unwritten check at Harborlight that was worth 12 bad partitions.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Backfills and debt as reliability work - learn data reliability with phoebe">
+<meta property="og:description" content="Leader session 5 of 6. The work that follows an incident, priced in three costs, and the debt that makes next month's incidents.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/a5-backfills-and-debt.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Backfills and debt as reliability work - learn data reliability with phoebe">
+<meta name="twitter:description" content="A backfill is not a feature and not an incident, so it lands on whoever is on call. One item of debt was worth 12 bad partitions.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Leader session 5 · Backfills and debt as reliability work - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Leader session 5 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Leader session 5 of 6</div>
+    <h1>Backfills and debt <span class="accent">as reliability work</span></h1>
+    <p class="sub">Every reliability plan has a line for incidents and a line for features, and no line at all for the work that follows an incident: recomputing the partitions that were bad, re-running the reports that read them, and telling the person who signed a number that the number has changed. At Harborlight that work followed five incidents and fell, every time, on whoever happened to be on call. Tonight it gets a price, a budget and a place in the plan. So does the quieter thing that causes it: the check nobody wrote, the runbook that stops at step two, the connector with no retry. Two of the month's five incidents came from one unwritten check, and that check was worth 12 bad partitions.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Advanced</span>
+      <span class="chip audience">Data and analytics leaders</span>
+      <span class="chip audience">Anyone whose backlog has a "reliability" column that never empties</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · The backlog that never shrinks</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: price one backfill</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 5 sits in the leader track</h2>
+    </div>
+    <p class="lede">Six sessions, one running example. Session 1 put a number on the <strong>orders</strong> pipeline at Harborlight: 685 of 720 hourly partitions good, 95.14 percent. Session 2 turned the number into an error budget and showed that a 97 percent promise ran out of budget on night 15. Session 3 designed the on-call and cut 35 pages a month to 5. Session 4 wrote the postmortems for the five incidents. Tonight is what those postmortems left behind: the backfills nobody planned and the debt that made the incidents in the first place, both priced in the currency the budget already speaks. Session 6 reports the whole thing upward in three numbers.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A plain definition of a backfill and the three costs it carries, one of which is a governance event rather than a pipeline task. A list of last quarter's backfills for one pipeline, with who did them and when. One item of reliability debt, written as the thing that would have prevented two of your incidents, priced against the budget, and placed in front of the next feature in the plan with a sentence that justifies it.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the reliability backlog never shrinks<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Ask any data team to show you its reliability backlog and it will have one: a column, a label, a list of twenty things everybody agrees should be done. Ask when the oldest item was written and the answer is usually a year or more. The list does not shrink because nothing on it ever competes with anything. Features are argued for in a planning meeting with a customer's name attached. Incidents are argued for by the pager at three in the morning. The reliability list is argued for by nobody, so it waits for a quiet month, and there is no quiet month.</p>
+        <p>There are two kinds of work on that list, and they behave differently. <strong>Backfills</strong> are the work an incident leaves behind: partitions that were bad or missing and have to be recomputed so that the history reads true. They are urgent and invisible at the same time, so they get done, badly, by whoever is on call. <strong>Debt</strong> is the work that would have prevented the incident: the check that was never written, the retry that was never added. It is important and never urgent, so it does not get done at all. Tonight prices both in the same unit the error budget uses, because that is the only unit in which they can be compared with a feature.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's reliability column had 23 items in it at the end of the month of the five incidents. Two were written before the platform lead joined. One of them read "row count check on orders load" and had been there for seven months. It would have caught night 21 and night 27. Nobody had ever been asked to choose between it and a feature, so nobody ever had.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What the five incidents left owing the next morning<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The postmortems in session 4 explained the five incidents. What they did not do is list the work each one left behind, because that work was already being done by the time the postmortem was written, by the on-call, unrecorded.</p>
+        <ul>
+          <li><strong>Night 4, late load, 3 bad partitions.</strong> The three partitions landed, late. Nothing to recompute. What was owed was a message to the settlement lead before eight saying which hours were late, and whether the report she signed at nine included them.</li>
+          <li><strong>Night 9, upstream outage, 14 bad partitions.</strong> Fourteen hours never arrived. Once the upstream came back, 14 partitions had to be recomputed, and every report that had been read with 14 hours stale needed a conversation with whoever read it.</li>
+          <li><strong>Night 15, corrupt batch, 6 bad partitions.</strong> Six partitions on time with a currency column that arrived as text. A backfill: six partitions recomputed with the fix, and six hours of a signed settlement report that now read differently.</li>
+          <li><strong>Night 21, flapping connector, 8 scattered bad partitions.</strong> Eight small backfills, each run by hand within the hour by the on-call. None of them appeared on any plan, and the on-call's evening appeared on no timesheet.</li>
+          <li><strong>Night 27, partial load, 4 bad partitions.</strong> Four partitions landed on time and correct with one of three shards missing. A backfill: four partitions recomputed with the third shard, plus every report that had consumed them at two thirds.</li>
+        </ul>
+        <p>Five incidents, five different kinds of owed work, all of it done by two people between midnight and nine over the course of a month, none of it planned, none of it priced.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers backfills as work that belongs in the budget conversation</span>
+      <h2>A backfill is reliability work that nobody budgets</h2>
+      <span class="tag concept">10 min live</span>
+    </div>
+    <p class="lede">A backfill recomputes partitions that were bad or missing, after the fact, so that the history reads true. That sentence sounds like a pipeline task, and the compute is. But a backfill has two more costs that are not about the pipeline at all: the reports that already consumed the wrong partitions, and the number somebody has already signed. Most plans see the first cost and none of the other two, which is exactly why the backlog never shrinks and why the on-call is tired.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three horizontal cost bands stacked vertically for one backfill, Harborlight night 15. Cost 1, compute: recompute six partitions, paid by the platform team. Cost 2, downstream reads: every report built on the six is re-run or told, paid by downstream owners. Cost 3, the signed number: the settlement report was already signed and sellers paid against it, marked as a governance event announced before it runs, paid by whoever signed it. A note says most plans see only cost 1.">
+        <style>
+          .a5aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a5aW { font: 400 11px Inter, sans-serif; fill: #fff; }
+          .a5aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a5aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a5aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a5aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a5aR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <text class="a5aH" x="14" y="28">One backfill, priced: night 15, six partitions on time and wrong</text>
+
+        <rect x="14" y="48" width="250" height="56" rx="8" fill="#CBD5E1"></rect>
+        <text class="a5aH" x="26" y="71">Cost 1 · compute</text>
+        <text class="a5aB" x="26" y="90">recompute six partitions</text>
+        <text class="a5aB" x="290" y="71">warehouse hours, plus the evening of whoever runs it</text>
+        <text class="a5aM" x="290" y="90">in the plan: never, it is not a feature</text>
+        <text class="a5aN" x="690" y="71">pays: the platform team</text>
+
+        <rect x="14" y="118" width="250" height="56" rx="8" fill="#94A3B8"></rect>
+        <text class="a5aH" x="26" y="141">Cost 2 · downstream reads</text>
+        <text class="a5aB" x="26" y="160">reports that read the wrong six</text>
+        <text class="a5aB" x="290" y="141">every report built on the six is re-run or told</text>
+        <text class="a5aM" x="290" y="160">the cost grows for every hour the fix waits</text>
+        <text class="a5aN" x="690" y="141">pays: downstream owners</text>
+
+        <rect x="14" y="188" width="250" height="56" rx="8" fill="#0F172A"></rect>
+        <text class="a5aT" x="26" y="211">Cost 3 · the signed number</text>
+        <text class="a5aW" x="26" y="230">settlement report, already signed</text>
+        <text class="a5aB" x="290" y="211">sellers were paid against it, it cannot just change</text>
+        <rect x="290" y="219" width="126" height="18" rx="5" fill="#F59E0B"></rect>
+        <text class="a5aH" x="353" y="232" text-anchor="middle">governance event</text>
+        <text class="a5aR" x="426" y="232">announced before it runs</text>
+        <text class="a5aN" x="690" y="211">pays: whoever signed it</text>
+
+        <rect x="14" y="272" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a5aN" x="38" y="284">Most plans see cost 1 only. Costs 2 and 3 land on whoever is on call, which is why the backlog never shrinks.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the three costs of one backfill, and the one that is a governance event.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What a backfill is, in plain terms<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A pipeline writes one partition per hour. When a partition is bad, because it arrived late, or wrong, or with a piece missing, or never arrived at all, the history has a hole or a lie in it at that hour. A backfill goes back to that hour and computes the partition again, from source data that is now available or now correct, and writes it over the bad one. When it is finished, somebody reading last month sees what should have been there, not what was.</p>
+        <p>Three words in that description carry the whole cost. <em>Again</em> means compute that was already spent once. <em>Over</em> means anything that read the old partition read something that no longer exists. <em>Last month</em> means somebody may already have acted on the old version. The builder track owns how to run a backfill without breaking the reports downstream, with idempotent writes and watermarks and replay. A leader owns whether it is funded, who is told, and when it is allowed to run.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why a backfill is invisible in most plans<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A plan has two kinds of line on it. Features, which somebody asked for and which have a name and a date. Incidents, which nobody asked for but which announce themselves loudly enough to get a line after the fact. A backfill is neither. It is not a feature, because nobody outside the team asked for last month's history to be correct; they assumed it was. It is not an incident, because the incident is over by the time the backfill starts. So it has no line, and work with no line lands on whoever is on call, in the hours after the page, unrecorded.</p>
+        <ul>
+          <li><strong>It has no requester.</strong> The settlement lead did not ask for night 15 to be recomputed. She asked for the report to be right, and assumed the recompute was part of the pipeline being a pipeline.</li>
+          <li><strong>It has no date.</strong> A feature slips and somebody notices. A backfill that has not been run yet is a history that is quietly wrong, and nobody notices until a reader reconciles against it.</li>
+          <li><strong>It has no owner.</strong> The on-call did it because the on-call was awake. When the rota turns, the half-finished backfill belongs to nobody.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The three costs a backfill carries<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Priced honestly, a backfill has three costs, and they are paid by three different people.</p>
+        <table class="clean">
+          <thead><tr><th>Cost</th><th>What it is</th><th>Who pays it</th><th>Seen in the plan?</th></tr></thead>
+          <tbody>
+            <tr><td><strong>1 · Compute</strong></td><td>Warehouse time to recompute the partitions, plus the person-hours to run it and check it</td><td>The platform team</td><td>Sometimes, as an afterthought</td></tr>
+            <tr><td><strong>2 · Downstream reads</strong></td><td>Every report, model and export that already consumed the wrong partitions and now has to be re-run, or has to be told it read something that no longer exists</td><td>Every downstream owner, one at a time</td><td>Almost never</td></tr>
+            <tr><td><strong>3 · The signed number</strong></td><td>A report that was signed, and acted on, and cannot simply change: the settlement report sellers were paid against</td><td>Whoever signed it, and whoever they answer to</td><td>Never, because it is not a pipeline task</td></tr>
+          </tbody>
+        </table>
+        <p>The first cost is the only one a data team can pay alone, which is why it is the only one most plans see. The second grows with every hour the fix waits, because every hour another report reads the wrong partition. The third does not grow; it is either there or it is not, and when it is there it changes what kind of work the backfill is.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What each of Harborlight's five incidents actually needed<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Five incidents, 35 bad partitions, and three quite different kinds of after-work. Putting them side by side is what shows that "backfill" is not one thing.</p>
+        <table class="clean">
+          <thead><tr><th>Night</th><th>Incident</th><th>Bad partitions</th><th>What it needed afterwards</th></tr></thead>
+          <tbody>
+            <tr><td>4</td><td>Late load</td><td>3</td><td>No recompute; the partitions landed. A message to the reader before eight about which hours were late.</td></tr>
+            <tr><td>9</td><td>Upstream outage</td><td>14</td><td>A recompute of 14 partitions once the upstream returned, plus a conversation with everyone who read the report with 14 hours stale.</td></tr>
+            <tr><td>15</td><td>Corrupt batch</td><td>6</td><td>A backfill with the currency fix. Six hours of a signed settlement report change. Governance event.</td></tr>
+            <tr><td>21</td><td>Flapping connector</td><td>8</td><td>Eight small backfills, run by hand within the hour by the on-call. Compute only, but eight times, at night.</td></tr>
+            <tr><td>27</td><td>Partial load</td><td>4</td><td>A backfill with the third shard restored, plus every report that consumed the four partitions at two thirds.</td></tr>
+          </tbody>
+        </table>
+        <p>Night 9 is the one that looks like the biggest backfill and is really the biggest conversation: 14 partitions is an afternoon of compute, but 14 hours of a report that people read and acted on is a list of people to call. Night 15 is the smallest recompute and the heaviest, because the number it changes had a signature on it. Night 21 cost nothing anybody could see and one person's whole night.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The honest rule: a changed signed number is a governance event<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A backfill that changes a number nobody has signed is a pipeline task: schedule it, run it, tell the downstream owners. A backfill that changes a number somebody <em>has</em> signed is a different thing, and the difference is not technical. The signature meant that a person took responsibility for that number and other people acted on it: sellers were paid, a month was closed, a figure went into a board pack. Silently correcting it afterwards means the record of what was decided no longer matches what was decided on. That is the definition of a governance problem, and it is handled as one.</p>
+        <ul>
+          <li><strong>It is announced before it runs, never discovered after.</strong> The person who signed the number hears, from the data team, what is about to change, by how much, and why, with the old and new figures side by side.</li>
+          <li><strong>The signer decides what happens to the signed version.</strong> Restate it, footnote it, leave it and correct forward. That is their call, because their name is on it. The data team's job is to make the call possible, not to make it.</li>
+          <li><strong>The old version is kept.</strong> A backfill overwrites the partition. It does not overwrite the report that was produced from it, because that report is now a record of a decision.</li>
+          <li><strong>The announcement is written down.</strong> Who was told, when, what changed. When the auditor asks in nine months why March's settlement differs from the March that was paid, that note is the answer.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's night 15 backfill was run at 02:40 the following night by the on-call, who was proud of the fast turnaround. The settlement lead found out three weeks later, when finance reconciled against the bank and six hours no longer matched the report she had signed. The compute took forty minutes. The conversation about why a signed number had changed without her knowledge took the whole of the next steering meeting, and the rule above is what came out of it.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What the announcement looks like, and what it must not<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The announcement is short, arrives before the run, and gives the signer everything they need to decide what to do about the signed version. It is not an apology and not a technical explanation.</p>
+        <div class="prompt-box bad">
+          <span class="label">✕ How a changed number is usually communicated</span>
+FYI we reprocessed some of the orders data from the 15th after a type issue, so the numbers might look a bit different if you re-run anything. Let us know if you see any problems.
+        </div>
+        <div class="prompt-box good">
+          <span class="label">★ What the settlement lead now receives before the backfill runs</span>
+Six hourly partitions of orders for night 15 (00:00 to 06:00) were computed with a currency column read as text. They will be recomputed tonight at 23:00. The settlement report you signed on the 16th will differ in those six hours: gross settled 412,880 becomes 418,215, a change of 5,335 in sellers' favour. The signed version is kept unchanged. How would you like the difference handled: restated, footnoted, or corrected in the next cycle? Nothing runs until you say.
+        </div>
+        <p>Every sentence in the second version answers a question the signer will have. Which hours, why, when, by how much, in whose favour, what happens to what I signed, and what do you need from me. The numbers in it are the actual ones the recompute will produce, run in a scratch table first, because "the numbers might look a bit different" is the sentence that turns a governance event into a governance failure.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers reliability debt as spend from the error budget</span>
+      <h2>Debt is spend from a budget nobody opened</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">Reliability debt is the list of things that are not there: the coverage check nobody wrote, the runbook that stops at step two, the connector with no retry. It looks like a list of chores. It is actually a list of next month's incidents, with the dates left blank. The error budget already prices an incident in bad partitions, so the debt that would have prevented the incident can be priced the same way, and once it has a price it can compete with a feature. Until then it competes with nothing, and loses.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five incident boxes across the top: night 4 late load 3 bad partitions, night 9 upstream outage 14, night 15 corrupt batch 6, night 21 flapping connector 8, night 27 partial load 4. The first three sit above a note saying three causes, three separate postmortem actions. Nights 21 and 27 are connected by arrows to a single debt item, a coverage check on row count and shards against the same hour last week, tagged as worth 12 of the month's 35 bad partitions.">
+        <style>
+          .a5bT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a5bW { font: 400 11px Inter, sans-serif; fill: #fff; }
+          .a5bX { font: 700 11px Inter, sans-serif; fill: #fff; }
+          .a5bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a5bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a5bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a5bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+        <defs>
+          <marker id="a5bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <text class="a5bH" x="14" y="28">Five incidents, 35 bad partitions, and the one check that two of them shared</text>
+
+        <rect x="14" y="48" width="160" height="70" rx="8" fill="#CBD5E1"></rect>
+        <text class="a5bH" x="26" y="70">night 4</text>
+        <text class="a5bB" x="26" y="88">late load</text>
+        <text class="a5bN" x="26" y="106">3 bad partitions</text>
+
+        <rect x="186" y="48" width="160" height="70" rx="8" fill="#CBD5E1"></rect>
+        <text class="a5bH" x="198" y="70">night 9</text>
+        <text class="a5bB" x="198" y="88">upstream outage</text>
+        <text class="a5bN" x="198" y="106">14 bad partitions</text>
+
+        <rect x="358" y="48" width="160" height="70" rx="8" fill="#CBD5E1"></rect>
+        <text class="a5bH" x="370" y="70">night 15</text>
+        <text class="a5bB" x="370" y="88">corrupt batch</text>
+        <text class="a5bN" x="370" y="106">6 bad partitions</text>
+
+        <rect x="530" y="48" width="160" height="70" rx="8" fill="#1E293B"></rect>
+        <text class="a5bT" x="542" y="70">night 21</text>
+        <text class="a5bW" x="542" y="88">flapping connector</text>
+        <text class="a5bX" x="542" y="106">8 bad partitions</text>
+
+        <rect x="702" y="48" width="160" height="70" rx="8" fill="#1E293B"></rect>
+        <text class="a5bT" x="714" y="70">night 27</text>
+        <text class="a5bW" x="714" y="88">partial load</text>
+        <text class="a5bX" x="714" y="106">4 bad partitions</text>
+
+        <rect x="14" y="170" width="504" height="40" rx="8" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a5bM" x="26" y="194">nights 4, 9 and 15: three causes, three separate postmortem actions</text>
+
+        <line x1="610" y1="120" x2="640" y2="166" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a5bAr)"></line>
+        <line x1="782" y1="120" x2="760" y2="166" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a5bAr)"></line>
+
+        <rect x="526" y="170" width="340" height="56" rx="8" fill="#0F172A"></rect>
+        <text class="a5bT" x="538" y="192">one debt item: a coverage check</text>
+        <text class="a5bW" x="538" y="212">row count and shards vs the same hour last week</text>
+
+        <rect x="526" y="236" width="340" height="20" rx="5" fill="#F59E0B"></rect>
+        <text class="a5bH" x="696" y="250" text-anchor="middle">worth 12 of the month's 35 bad partitions</text>
+
+        <rect x="14" y="282" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a5bN" x="38" y="294">Two of the five shared one missing check. One unfunded item of debt cost a third of the month's spend.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - five incidents, and the single debt item that would have prevented two of them.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Reliability debt is next month's incidents with the dates left blank<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Debt in a codebase is a shortcut somebody took. Reliability debt is slightly different: it is a thing that was never built, because the pipeline worked without it, until the night it did not. Three kinds recur in every data team, and each one maps directly onto an incident that has not happened yet.</p>
+        <ul>
+          <li><strong>The check nobody wrote.</strong> A coverage indicator that compares a partition's row count and shard count with the same hour last week takes a morning to build. Without it, a partition that lands on time and correct with a third of its data missing scores as good, and the reader finds out at reconciliation.</li>
+          <li><strong>The runbook that stops at step two.</strong> Step one: acknowledge the page. Step two: check the orchestrator. Step three: blank, because whoever wrote it knew what to do next and did not write it down. At three in the morning, that blank is the difference between a fifteen-minute fix and a fourteen-partition outage.</li>
+          <li><strong>The connector with no retry.</strong> A source that drops the connection once an hour for thirty seconds produces eight scattered bad partitions a night, each one a page, each one fixed by hand. A retry with a back-off is a day's work. The eight pages are a month's.</li>
+        </ul>
+        <p>None of these is an incident. Each of them is the reason an incident will happen, and the incident will be priced in bad partitions when it does. The debt can be priced the same way now, before the date is filled in.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Fund it from the error budget conversation<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Session 2 set up the error budget as a currency: at a 97 percent target, 21.6 bad partitions a month may be spent without a promise being broken. When the budget is healthy the team ships features. When the budget is burning, the same currency buys something else: hardening, the work that stops the burn. That is the conversation reliability debt belongs in, because the debt list <em>is</em> the shopping list for a burning budget. It answers the question the budget conversation always reaches: we are burning, what do we buy?</p>
+        <ul>
+          <li><strong>When the budget is healthy,</strong> the debt list waits, honestly and by decision, not by neglect. It is reviewed at the monthly report and nothing on it is funded unless it is cheaper than the incident it prevents.</li>
+          <li><strong>When the budget is burning,</strong> features stop and the top of the debt list ships. Not the whole list: the item whose incident is the one currently burning the budget.</li>
+          <li><strong>When the budget has run out,</strong> as it did on night 15 at a 97 percent target, the rest of the month is hardening by definition. The plan does not need a meeting to decide this. The stop rule decided it in advance, and session 6 is about who protects that rule when a feature is late.</li>
+        </ul>
+        <p>The effect on the debt list is that it stops being a list of chores and becomes a list of purchases with prices attached, waiting for the budget to say which one to make. A list like that shrinks.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>One item of debt was worth 12 bad partitions<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The five incidents in Harborlight's month look, in the postmortems, like five different stories. The late load was upstream timing. The outage was upstream being down. The corrupt batch was a type that drifted. The flapping connector was a network that dropped once an hour. The partial load was a shard that never arrived. Five causes, five action items, five owners.</p>
+        <p>Two of them share something the postmortems did not make obvious, because postmortems are written one incident at a time. Night 21's flapping connector produced eight partitions each missing a slice of the hour. Night 27's partial load produced four partitions each missing one of three shards. Both are the same failure from the reader's point of view: a partition that landed on time, reconciled, and was not all there. Both would have been caught by <strong>one coverage indicator</strong> comparing row count and shard count against the same hour last week. That check had been on the reliability list for seven months.</p>
+        <table class="clean">
+          <thead><tr><th>Incident</th><th>Bad partitions</th><th>Caught by a coverage check?</th></tr></thead>
+          <tbody>
+            <tr><td>Night 21 · flapping connector</td><td>8</td><td>Yes: each partition short on rows against last week</td></tr>
+            <tr><td>Night 27 · partial load</td><td>4</td><td>Yes: each partition short one shard of three</td></tr>
+            <tr><td><strong>One debt item</strong></td><td><strong>12 of 35</strong></td><td><strong>A third of the month's spend, from one morning's work never scheduled</strong></td></tr>
+          </tbody>
+        </table>
+        <p>Twelve of 35 bad partitions is a third of everything the month spent. At a 97 percent target with a budget of 21.6, those 12 are more than half the budget. One item, one morning of work, and it would have been the difference between the budget running out on night 15 and the budget lasting the month. That is what "worth" means for a debt item, and it is a number the budget conversation can use directly.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The trap: a separate backlog that never competes<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The instinct, once a team has named its reliability debt, is to give it its own home. A separate board, a separate column, a "tech health" epic. It feels like taking the work seriously. It is the opposite: it is the mechanism by which the work is guaranteed never to happen. Anything on a separate list is by definition not on the list that gets planned, so it never has to beat a feature, so it never gets to.</p>
+        <ul>
+          <li><strong>One plan, one list.</strong> The coverage check sits in the same ordered list as the new dashboard and the new export, and it is either above them or below them. Its position is a decision somebody made and can be asked about.</li>
+          <li><strong>Priced in the same unit as the thing it competes with.</strong> A feature is justified by what it earns or saves. A debt item is justified by the bad partitions it prevents, at the budget's exchange rate. "Twelve bad partitions, more than half a month's budget at 97" is a sentence that can sit in a planning meeting next to a customer's name.</li>
+          <li><strong>Reviewed when the budget is reviewed.</strong> Not in its own ceremony. When the monthly report says how much budget was spent and on what, the debt list is the second page: what would have prevented it, and what it costs.</li>
+        </ul>
+        <div class="callout tip">
+          <p><strong>The test for whether debt is really in the plan.</strong> Ask what feature it displaced. If the answer is "none, we did it in a quiet week", it was not in the plan; it was done on somebody's goodwill and it will not be done again. If the answer is a feature's name, the debt was funded.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Pricing a debt item the way you price a backfill<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A debt item is priced twice: what it costs to do, and what it would have cost not to do. The first is an estimate in days. The second is a count of bad partitions from history, and it is the one that makes the argument.</p>
+        <ul>
+          <li><strong>Find the incidents it would have prevented.</strong> Read the last quarter's incidents and ask, for each one, whether this item would have caught it before the reader did. Be strict; "might have helped" does not count.</li>
+          <li><strong>Sum their bad partitions.</strong> Nights 21 and 27 at Harborlight: 8 and 4, 12 in total. That is the item's worth in the budget's currency.</li>
+          <li><strong>State it against the budget.</strong> Twelve of 35 bad partitions is a third of the month's spend. Against a 97 percent budget of 21.6 it is more than half. Against a 95 percent budget of 36 it is a third. Say which target you are pricing against, because the same 12 partitions are a different fraction of each.</li>
+          <li><strong>State what it displaces.</strong> One morning of an engineer's time, and whichever feature that morning was going to.</li>
+          <li><strong>Write the one sentence.</strong> "Build the coverage check before the export: it would have caught 12 of last month's 35 bad partitions, more than half the budget at our target, for one morning of work." That sentence goes in the plan, above the export, and it is the whole argument.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Price one backfill, fund one debt item</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">No code, one pipeline, one page. Bring the pipeline whose incidents you listed in session 4, and its plan for next quarter. If you have nothing to hand, use Harborlight's five incidents and its 23-item reliability column. The output is a priced backfill, a priced debt item, and the sentence that puts the debt item above a feature.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>List last quarter's backfills: who did them, on what schedule.</strong> Not the incidents, the after-work. For each incident, what was recomputed, who ran it, and when: on a plan, or at two in the morning by the on-call. Most teams discover in this step that every backfill was run by the same two people and none of them appears anywhere. At Harborlight the list had five entries, two names, and one entry marked "run at 02:40, settlement lead not told".</p>
+      </div>
+      <div class="step">
+        <p><strong>Price one of them in the three costs.</strong> Pick the one that touched a signed number if you have one. Compute: warehouse hours plus person-hours. Downstream reads: every report and export that consumed the bad partitions before the fix, named. The signed number: whether one existed, who signed it, and whether they were told before or after. If the answer to the last is "after", write that down; it is the most useful sentence on the page.</p>
+      </div>
+      <div class="step">
+        <p><strong>Find two incidents that shared a cause, and write the one debt item that would have prevented both.</strong> Read the quarter's incidents side by side, not one at a time. Look for two that the reader would describe the same way even if the engineers would not. At Harborlight it was nights 21 and 27: partitions on time, reconciled, not all there. The item is one coverage check on row count and shards against the same hour last week. Write it as a task with a size, not as a wish.</p>
+      </div>
+      <div class="step">
+        <p><strong>Price the item in bad partitions and put it above the next feature in the plan.</strong> Sum the bad partitions of the incidents it would have caught: 8 plus 4, 12 of 35. Say what fraction of the budget that is at your target. Then open next quarter's plan, find the first feature, and put the debt item above it. Write the one sentence that justifies the position in budget terms, and be ready to say it to the person whose feature just moved down.</p>
+      </div>
+      <div class="step">
+        <p><strong>Set the rule for the next signed-number backfill.</strong> One line, agreed with the person who signs: nothing that changes a signed figure runs until they have been told the old and new numbers and have said how the signed version is handled. Put their name on it. This is the governance event made routine, which is the only way it stops being a crisis.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box bad">
+      <span class="label">✕ How debt is usually justified in a planning meeting</span>
+We really need to improve monitoring on the orders pipeline. It keeps causing problems and the team is spending a lot of time on it. Can we get some time for tech health next quarter?
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ The sentence Harborlight's platform lead put above the export</span>
+Build the coverage check on orders (row count and shard count against the same hour last week) before the seller export. It would have caught nights 21 and 27: 12 of last month's 35 bad partitions, a third of the month's spend and more than half our budget at 97 percent. One morning of work. The export moves one week.
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Do not fund the whole debt list tonight.</strong> One item, priced, above one feature, with a sentence. A list of twenty items funded in principle is the separate backlog wearing a new label. One item that actually displaced a feature is the first time the debt list shrank, and the second item is easier because the first one has a precedent.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 6</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Finish the backfill list for last quarter with names and times. Count how many were run outside working hours and how many changed a number somebody had already signed. Those two counts go into next session's report as toil and as governance events.</li>
+      <li>Take the debt item you priced tonight to the owner of the feature it displaced. Say the sentence. Write down what they said, because that conversation is the one you will have every quarter from now on and the first version is worth keeping.</li>
+      <li>Ask whoever signs the report your pipeline feeds whether a number they signed has ever changed underneath them. If the answer is yes, ask how they found out. If it was not from the data team, agree the announcement rule with them this week.</li>
+      <li>Ask the on-call for the hours they spent last month on backfills, restarts and checks done by hand. Do not estimate for them. That number is the third of the three numbers session 6 reports.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">A backfill of night 15 will change six hours of the settlement report that was signed on the 16th and that sellers were paid against. What kind of work is it?</p>
+      <button class="qopt" type="button">A · A pipeline task for the on-call to run tonight, since the fix is known</button>
+      <button class="qopt" type="button">B · Unnecessary, since the report is already signed and cannot be reopened</button>
+      <button class="qopt" type="button">C · A governance event: announced to the signer before it runs, with the old and new figures side by side, and the signer decides how the signed version is handled</button>
+      <p class="qwhy">The compute is a pipeline task. The signed number is a record of a decision other people acted on, and changing it silently means the record no longer matches what was decided. Harborlight's on-call ran it at 02:40 and the settlement lead found out three weeks later from finance.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Night 21's flapping connector produced 8 bad partitions and night 27's partial load produced 4. What did the two incidents share?</p>
+      <button class="qopt" type="button">A · One missing coverage check on row count and shard count against the same hour last week, which would have caught both: 12 of the month's 35 bad partitions from one unbuilt item</button>
+      <button class="qopt" type="button">B · The same upstream outage, arriving on two different nights</button>
+      <button class="qopt" type="button">C · Nothing; five incidents with five causes need five separate fixes</button>
+      <p class="qwhy">Both landed partitions on time and reconciled with part of the data missing. Postmortems written one incident at a time do not show that; the incidents read side by side do. One item of debt was worth a third of the month's spend.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">The team proposes a separate "tech health" board for its reliability debt so the work is taken seriously. What happens to the debt?</p>
+      <button class="qopt" type="button">A · It gets done in the next quiet month</button>
+      <button class="qopt" type="button">B · It never competes with a feature, so it never shrinks; it belongs in the one plan, priced in bad partitions, funded from the error budget conversation when the budget is burning</button>
+      <button class="qopt" type="button">C · It should be closed after ninety days if nobody has picked it up</button>
+      <p class="qwhy">Anything on a separate list never has to beat a feature, so it never gets to. The test is what feature the debt item displaced. "None, we did it in a quiet week" means it was not in the plan.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Backfills and debt as reliability work - why they belong in the budget conversation</span>
+        <span class="note">The three costs of a backfill, the signed number as a governance event, and debt priced in bad partitions and funded when the budget burns.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Harborlight: five incidents, and the one check two of them shared</span>
+        <span class="note">Nights 21 and 27, 8 and 4 bad partitions, 12 of 35: one coverage indicator, a third of the month's spend, more than half the budget at 97 percent.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">The error budget as currency for hardening</span>
+        <span class="note">Session 2's budget arithmetic reused: 21.6 bad partitions at 97 percent, exhausted on night 15, and what the budget buys once it is burning.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Running a backfill without breaking downstream</span>
+        <span class="note">Builder session 5 owns idempotent writes, watermarks and replay. Here a backfill only has to be priced, announced and funded.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Toil: measuring the hours of hand-run work</span>
+        <span class="note">Builder session 7 owns the definition and the toil budget. Here the on-call's backfill hours are collected as a number for session 6's report.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Pipeline construction, CI/CD and orchestration</span>
+        <span class="note">The DataOps and orchestration courses own how a pipeline is built and scheduled. Backfills here are operating discipline, not construction.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. The AI observability course owns those; the objects here are tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 5 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>A backfill</b><span>Recomputes partitions that were bad or missing, after the fact, so the history reads true.</span></div>
+      <div class="cheat-item"><b>Invisible by shape</b><span>Not a feature, not an incident, so no line in the plan. It lands on whoever is on call.</span></div>
+      <div class="cheat-item"><b>Three costs</b><span>Compute, the downstream reads that already consumed the wrong partitions, and the signed number.</span></div>
+      <div class="cheat-item"><b>Signed number = governance event</b><span>Announced before it runs, old and new side by side, the signer decides. Never discovered after.</span></div>
+      <div class="cheat-item"><b>Debt is next month's incidents</b><span>The check nobody wrote, the runbook that stops at step two, the connector with no retry.</span></div>
+      <div class="cheat-item"><b>Fund it from the budget</b><span>Budget burning: hardening is what you buy, and the debt list is the shopping list.</span></div>
+      <div class="cheat-item"><b>12 of 35</b><span>Nights 21 and 27 shared one missing coverage check. One item, a third of the month's spend.</span></div>
+      <div class="cheat-item"><b>No separate backlog</b><span>Debt in the one plan, priced in bad partitions. The test: which feature did it displace?</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Leader session 5 of 6 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="a4-postmortems.html">← Leader session 4 · Postmortems</a>
+      <a href="a6-reporting-upward.html">Leader session 6 · Reporting reliability upward →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

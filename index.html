@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Fourteen sessions on the promise, the budget and the people on call for a data pipeline: SLIs for partitions, targets set from history, error budgets, burn-rate alerting, runbooks, backfills and postmortems, replayed over thirty real nights. Free, by Phoebe Fu.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Learn Data Reliability with Phoebe">
+<meta property="og:description" content="35 pages or 5, for the same five incidents. The target decides the budget; the policy decides the pages.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Learn Data Reliability with Phoebe">
+<meta name="twitter:description" content="35 pages or 5, for the same five incidents. The target decides the budget; the policy decides the pages.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Learn Data Reliability with Phoebe</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+<style>
+
+  .stats-row { display: flex; gap: 2.4rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .stat b { display: block; font-size: 2.1rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .72rem; opacity: .85; text-transform: uppercase; letter-spacing: .09em; font-weight: 600; }
+
+  .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .course-card {
+    border: 1px solid var(--hairline);
+    border-top: 4px solid var(--diff, var(--indigo));
+    border-radius: var(--radius);
+    padding: 1.2rem 1.3rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    text-decoration: none;
+    color: var(--ink);
+    background: #fff;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+    position: relative;
+  }
+  .course-card:hover { border-color: var(--indigo-soft); border-top-color: var(--diff, var(--indigo)); box-shadow: 0 8px 28px rgba(30,41,59,.16); transform: translateY(-3px); }
+  .course-card .cicon { font-size: 1.7rem; line-height: 1; }
+  .course-card .cnum { font-size: .72rem; font-weight: 700; color: var(--indigo); text-transform: uppercase; letter-spacing: .1em; }
+  .course-card h3 { font-size: 1.05rem; font-weight: 800; line-height: 1.3; }
+  .course-card p { font-size: .85rem; color: var(--muted); flex: 1; }
+  .course-card .meta { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+  .diff-legend { display: flex; gap: 1rem; margin-top: 1.6rem; font-size: .74rem; color: var(--muted); font-weight: 600; flex-wrap: wrap; }
+  .diff-legend i { display: inline-block; width: .85rem; height: .35rem; border-radius: 999px; margin-right: .35rem; vertical-align: middle; }
+
+  .paths { margin-top: 2.6rem; }
+  .paths h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .3rem; }
+  .paths .plede { color: var(--muted); font-size: .92rem; margin-bottom: .8rem; }
+  .path { display: flex; gap: .55rem; align-items: center; padding: .75rem 0; border-bottom: .5px solid var(--hairline); flex-wrap: wrap; }
+  .path:last-child { border-bottom: none; }
+  .path b { min-width: 15.5rem; font-size: .9rem; }
+  .path .pstep { background: var(--indigo-50); color: var(--indigo); border-radius: 999px; padding: .16rem .68rem; font-weight: 700; font-size: .8rem; text-decoration: none; transition: all .12s ease; }
+  .path .pstep:hover { background: var(--indigo); color: #fff; }
+  .path .parr { color: var(--faint); font-weight: 700; }
+
+  .mm-section { margin-top: 1.6rem; }
+  .mm-section h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+  .mm-section .mm-lede { color: var(--muted); font-size: .92rem; margin-bottom: .4rem; }
+  .mm-wrap { border: 1px solid var(--hairline); border-radius: var(--radius); background: linear-gradient(180deg,#fff,#F1F5F9); padding: .6rem; overflow-x: auto; }
+  .mm-svg { width: 100%; height: auto; display: block; max-width: 60rem; margin: 0 auto; min-width: 34rem; }
+  .mm-link { cursor: pointer; text-decoration: none; }
+  .mm-node rect { transition: opacity .15s ease, filter .15s ease; }
+  .mm-node text { pointer-events: none; }
+  .mm-link:hover .mm-node rect { filter: brightness(1.06); }
+  .mm-edge { transition: opacity .15s ease; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn with Phoebe · Data Ops &amp; Security</div>
+    <h1>Learn <span class="accent">Data Reliability</span> with Phoebe</h1>
+    <p class="sub">Every reliability conversation that goes badly goes badly for the same reason: somebody made a promise before anybody made a measurement. Harborlight's team believed their orders pipeline was basically 99 percent. Counted by partition it was 95.14, and the difference is a month of promises the history could not keep. This course builds the contract properly: indicators for partitions, a target the history supports, an error budget that decides what ships, alerting that pages once per incident instead of thirty-five times, and the runbooks, backfills and postmortems that make a rota survivable. Six leader sessions on the promise, the budget and the humans; eight builder sessions on one pipeline, measured, promised, alerted, documented and replayed over thirty nights on call.</p>
+    <div class="stats-row">
+      <div class="stat"><b data-count="14">14</b><span>sessions, two tracks</span></div>
+      <div class="stat"><b data-count="720">720</b><span>hourly partitions on the bench</span></div>
+      <div class="stat"><b data-count="35">35</b><span>pages from alerting on every breach</span></div>
+      <div class="stat"><b data-count="5">5</b><span>pages from burn-rate alerting, all useful</span></div>
+      <div class="stat"><b data-count="45">45</b><span>min per session</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>Leader track 📈 <span style="font-size:.85rem;font-weight:600;color:var(--muted)">· six sessions, no SQL</span></h2>
+      <p class="plede">For whoever funds the work and signs the settlement report. What a promise with a number changes, what the budget buys, and why the rota is the last decision rather than the first.</p>
+    </div>
+
+    <div class="course-grid">
+      <a class="course-card" href="courses/a1-promise-with-a-number.html" style="--diff:#34D399">
+        <span class="cicon">🤝</span>
+        <span class="cnum">Leader session 1 · start here</span>
+        <h3>A promise with a number</h3>
+        <p>SLI, SLO and SLA as the reliability literature defines them, why 100 percent is the wrong target, and 95.14 against the 99 everybody believed.</p>
+        <span class="meta"><span class="pill amber">▶ Start here</span></span>
+      </a>
+      <a class="course-card" href="courses/a2-error-budgets.html" style="--diff:#34D399">
+        <span class="cicon">💰</span>
+        <span class="cnum">Leader session 2</span>
+        <h3>Error budgets buy decisions</h3>
+        <p>One hundred minus the promise, as bad partitions allowed. 95 percent ends with 3 percent left; 99.9 is gone on night 4.</p>
+      </a>
+      <a class="course-card" href="courses/a3-on-call-is-a-design.html" style="--diff:#FBBF24">
+        <span class="cicon">📟</span>
+        <span class="cnum">Leader session 3</span>
+        <h3>On-call is a design, not a rota</h3>
+        <p>35 pages a month with five useful is a design problem, not a staffing one. The humane rota and why it is also the effective one.</p>
+      </a>
+      <a class="course-card" href="courses/a4-postmortems.html" style="--diff:#FBBF24">
+        <span class="cicon">🔍</span>
+        <span class="cnum">Leader session 4</span>
+        <h3>Postmortems that change something</h3>
+        <p>Blameless as the entry condition, actions with an owner and a date, and the gap only five postmortems read together reveal.</p>
+      </a>
+      <a class="course-card" href="courses/a5-backfills-and-debt.html" style="--diff:#FB923C">
+        <span class="cicon">🧱</span>
+        <span class="cnum">Leader session 5</span>
+        <h3>Backfills and debt as reliability work</h3>
+        <p>Why the backlog that never shrinks belongs in the budget conversation.</p>
+      </a>
+      <a class="course-card" href="courses/a6-reporting-upward.html" style="--diff:#FB923C">
+        <span class="cicon">📊</span>
+        <span class="cnum">Leader session 6</span>
+        <h3>Reporting reliability upward</h3>
+        <p>Budget remaining, pages per week and toil, monthly, forever. The report that does not need a meeting.</p>
+        <span class="meta"><span class="pill amber">the board version</span></span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>Builder track 🔧 <span style="font-size:.85rem;font-weight:600;color:var(--muted)">· eight sessions, one reliability contract</span></h2>
+      <p class="plede">One pipeline, Harborlight's orders, measured, promised, alerted, documented and replayed. Session 8 lives the month under every target and policy.</p>
+    </div>
+
+    <div class="course-grid">
+      <a class="course-card" href="courses/b1-slis-for-one-pipeline.html" style="--diff:#34D399">
+        <span class="cicon">📏</span>
+        <span class="cnum">Builder session 1 · start here</span>
+        <h3>SLIs for one pipeline</h3>
+        <p>Freshness, correctness and coverage from the data-processing menu, specification against implementation, and 685 of 720.</p>
+        <span class="meta"><span class="pill amber">▶ Start here</span></span>
+      </a>
+      <a class="course-card" href="courses/b2-slos-from-history.html" style="--diff:#FBBF24">
+        <span class="cicon">🎯</span>
+        <span class="cnum">Builder session 2</span>
+        <h3>SLOs from history, not hope</h3>
+        <p>Start loose, tighten later. Four targets and the night each one runs out of budget.</p>
+      </a>
+      <a class="course-card" href="courses/b3-burn-rate-alerts.html" style="--diff:#FBBF24">
+        <span class="cicon">🔥</span>
+        <span class="cnum">Builder session 3</span>
+        <h3>Error-budget arithmetic and burn-rate alerts</h3>
+        <p>Fast and slow windows, the rising edge, and 35 pages against 5 for the same five incidents.</p>
+      </a>
+      <a class="course-card" href="courses/b4-runbooks.html" style="--diff:#FBBF24">
+        <span class="cicon">📖</span>
+        <span class="cnum">Builder session 4</span>
+        <h3>Runbooks a tired person can follow</h3>
+        <p>The first three steps, what goes in, what stays out.</p>
+      </a>
+      <a class="course-card" href="courses/b5-backfills.html" style="--diff:#FB923C">
+        <span class="cicon">⏪</span>
+        <span class="cnum">Builder session 5</span>
+        <h3>Backfills without breaking downstream</h3>
+        <p>Idempotency, watermarks, replay, and the settlement report that has already been signed.</p>
+      </a>
+      <a class="course-card" href="courses/b6-incident-package.html" style="--diff:#FB923C">
+        <span class="cicon">📦</span>
+        <span class="cnum">Builder session 6</span>
+        <h3>The incident package</h3>
+        <p>Timeline in budget terms, impact, actions with owners and dates.</p>
+      </a>
+      <a class="course-card" href="courses/b7-toil.html" style="--diff:#F87171">
+        <span class="cicon">🧹</span>
+        <span class="cnum">Builder session 7</span>
+        <h3>Toil: measuring and buying it down</h3>
+        <p>What counts as toil, the toil budget, and what to automate first.</p>
+      </a>
+      <a class="course-card" href="courses/b8-on-call-bench.html" style="--diff:#F87171">
+        <span class="cicon">🎛️</span>
+        <span class="cnum">Builder session 8</span>
+        <h3>The on-call bench</h3>
+        <p>Thirty nights replayed under four targets and three policies. Two levers, and neither moves the other.</p>
+        <span class="meta"><span class="pill amber">🔒 the capstone</span></span>
+      </a>
+    </div>
+
+    <div class="diff-legend">
+      <span><i style="background:#34D399"></i>start here</span>
+      <span><i style="background:#FBBF24"></i>foundations</span>
+      <span><i style="background:#FB923C"></i>hands-on</span>
+      <span><i style="background:#F87171"></i>advanced and capstone</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="paths">
+      <h2>Choose your path 🗺️</h2>
+      <p class="plede">Three doors into the same contract. Both tracks start at their own session 1.</p>
+      <div class="path"><b>💼 I fund this and sign the report</b>
+        <a class="pstep" href="courses/a1-promise-with-a-number.html">L1</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/a2-error-budgets.html">L2</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/a3-on-call-is-a-design.html">L3</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/a6-reporting-upward.html">L6</a>
+        <span style="font-size:.82rem;color:var(--muted)">the promise, the budget, the rota, the monthly report</span>
+      </div>
+      <div class="path"><b>🔧 I carry the pager</b>
+        <a class="pstep" href="courses/b1-slis-for-one-pipeline.html">B1</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b2-slos-from-history.html">B2</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b3-burn-rate-alerts.html">B3</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b4-runbooks.html">B4</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b8-on-call-bench.html">B8</a>
+        <span style="font-size:.82rem;color:var(--muted)">measure, promise, alert once per incident, know what to do, then live the month</span>
+      </div>
+      <div class="path"><b>🎯 Everything, in order</b>
+        <a class="pstep" href="courses/a1-promise-with-a-number.html">L1</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/a4-postmortems.html">L4</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/a5-backfills-and-debt.html">L5</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b1-slis-for-one-pipeline.html">B1</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b5-backfills.html">B5</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b6-incident-package.html">B6</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b7-toil.html">B7</a>
+        <span class="parr">→</span>
+        <a class="pstep" href="courses/b8-on-call-bench.html">B8</a>
+        <span style="font-size:.82rem;color:var(--muted)">from basically 99 to a contract the history supports</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>Your passport 🎫</h2>
+      <p class="plede">Clear all three quiz questions in a session and it gets stamped. Fourteen stamps across both tracks, and they live in this browser only.</p>
+    </div>
+    <div class="pp-strip"></div>
+  </section>
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>What is real here 🧾</h2>
+      <p class="plede">A course about promises should be exact about which of its own numbers are measured.</p>
+    </div>
+    <table class="clean">
+      <tr><th>Claim</th><th>Status</th></tr>
+      <tr><td>The 720 partitions and 35 failures</td><td>Fixed and identical for every learner: 30 nights, 24 hourly partitions, five injected incidents on nights 4, 9, 15, 21 and 27 with 3, 14, 6, 8 and 4 bad partitions</td></tr>
+      <tr><td>95.14 percent achieved</td><td>685 of 720. Arithmetic</td></tr>
+      <tr><td>Budgets and exhaustion nights</td><td>100 percent minus the target, times 720. 95 percent: 36 allowed, 3 percent left. 97: 21.6, out on night 15. 99: 7.2, night 9. 99.9: 0.72, night 4. Computed by the bench</td></tr>
+      <tr><td>35 pages against 5</td><td>Threshold paging fires on every bad partition. Burn-rate paging fires when a 2-hour window burns at 14.4x or a 12-hour window at 3x, on the rising edge, never twice inside 12 hours. Those windows and rates are the bench's own stated choices</td></tr>
+      <tr><td>Actionable pages</td><td>Defined mechanically as the first page inside a real incident: 5 of 35, and 5 of 5. Nothing about the human is modelled</td></tr>
+      <tr><td>The two levers do not interact</td><td>Change the target and the page counts stay the same; change the policy and the budget stays the same. Both visible on the bench</td></tr>
+      <tr><td>SRE definitions</td><td>Quoted from the SRE book chapter on SLOs and the SRE workbook chapter on implementing SLOs, as recorded in the course map. The workbook's dedicated alerting chapter is not quoted</td></tr>
+      <tr><td>Harborlight</td><td>A fictional marketplace. The incidents are ordinary ones; the company is not real</td></tr>
+    </table>
+  </section>
+
+  <section class="section mm-section">
+    <h2>The knowledge map 🧠</h2>
+    <p class="mm-lede">Both tracks at a glance - hover a session to spotlight its concepts, click any node to jump in.</p>
+    <div class="mm-wrap"><div id="mindmap"></div></div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>learn-data-reliability-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span>Pairs with <a href="https://phoebefu6.github.io/learn-data-observability-with-phoebe/">Data Observability ↗</a> and <a href="https://phoebefu6.github.io/learn-dataops-with-phoebe/">DataOps ↗</a> · source map: <span class="mono">materials/official-course-map.md</span></span>
+  </footer>
+
+</main>
+
+<script>
+window.MINDMAP_DATA = {
+  "title": "Data\\nReliability",
+  "centerColor": "#0F172A",
+  "sessions": [
+    {
+      "label": "A promise with a number",
+      "href": "courses/a1-promise-with-a-number.html",
+      "concepts": [
+        {
+          "label": "SLI, SLO, SLA",
+          "href": "courses/a1-promise-with-a-number.html"
+        },
+        {
+          "label": "Not 100 percent",
+          "href": "courses/a1-promise-with-a-number.html"
+        },
+        {
+          "label": "95.14, not 99",
+          "href": "courses/b1-slis-for-one-pipeline.html"
+        }
+      ]
+    },
+    {
+      "label": "Error budgets",
+      "href": "courses/a2-error-budgets.html",
+      "concepts": [
+        {
+          "label": "100 minus SLO",
+          "href": "courses/a2-error-budgets.html"
+        },
+        {
+          "label": "Night 4, 9, 15",
+          "href": "courses/b2-slos-from-history.html"
+        },
+        {
+          "label": "Ship or harden",
+          "href": "courses/a2-error-budgets.html"
+        }
+      ]
+    },
+    {
+      "label": "On-call design",
+      "href": "courses/a3-on-call-is-a-design.html",
+      "concepts": [
+        {
+          "label": "35 or 5 pages",
+          "href": "courses/b8-on-call-bench.html"
+        },
+        {
+          "label": "Page budget",
+          "href": "courses/a3-on-call-is-a-design.html"
+        },
+        {
+          "label": "Escalation path",
+          "href": "courses/a3-on-call-is-a-design.html"
+        }
+      ]
+    },
+    {
+      "label": "Postmortems",
+      "href": "courses/a4-postmortems.html",
+      "concepts": [
+        {
+          "label": "Blameless",
+          "href": "courses/a4-postmortems.html"
+        },
+        {
+          "label": "Owner and date",
+          "href": "courses/b6-incident-package.html"
+        }
+      ]
+    },
+    {
+      "label": "Backfills and debt",
+      "href": "courses/a5-backfills-and-debt.html",
+      "concepts": [
+        {
+          "label": "Idempotency",
+          "href": "courses/b5-backfills.html"
+        },
+        {
+          "label": "Watermarks",
+          "href": "courses/b5-backfills.html"
+        }
+      ]
+    },
+    {
+      "label": "Reporting upward",
+      "href": "courses/a6-reporting-upward.html",
+      "concepts": [
+        {
+          "label": "Budget remaining",
+          "href": "courses/a6-reporting-upward.html"
+        },
+        {
+          "label": "Pages per week",
+          "href": "courses/a6-reporting-upward.html"
+        },
+        {
+          "label": "Toil",
+          "href": "courses/b7-toil.html"
+        }
+      ]
+    },
+    {
+      "label": "SLIs",
+      "href": "courses/b1-slis-for-one-pipeline.html",
+      "concepts": [
+        {
+          "label": "Freshness",
+          "href": "courses/b1-slis-for-one-pipeline.html"
+        },
+        {
+          "label": "Correctness",
+          "href": "courses/b1-slis-for-one-pipeline.html"
+        },
+        {
+          "label": "Coverage",
+          "href": "courses/b1-slis-for-one-pipeline.html"
+        },
+        {
+          "label": "Spec vs implementation",
+          "href": "courses/b1-slis-for-one-pipeline.html"
+        }
+      ]
+    },
+    {
+      "label": "Burn-rate alerts",
+      "href": "courses/b3-burn-rate-alerts.html",
+      "concepts": [
+        {
+          "label": "Fast and slow windows",
+          "href": "courses/b3-burn-rate-alerts.html"
+        },
+        {
+          "label": "Rising edge",
+          "href": "courses/b3-burn-rate-alerts.html"
+        }
+      ]
+    },
+    {
+      "label": "Runbooks",
+      "href": "courses/b4-runbooks.html",
+      "concepts": [
+        {
+          "label": "First three steps",
+          "href": "courses/b4-runbooks.html"
+        }
+      ]
+    },
+    {
+      "label": "The bench",
+      "href": "courses/b8-on-call-bench.html",
+      "concepts": [
+        {
+          "label": "Two levers",
+          "href": "courses/b8-on-call-bench.html"
+        },
+        {
+          "label": "99.9 is the trap",
+          "href": "courses/b8-on-call-bench.html"
+        }
+      ]
+    }
+  ]
+};
+</script>
+<script src="assets/app.js?v=1"></script>
+<script src="assets/mindmap.js?v=1"></script>
+</body>
+</html>

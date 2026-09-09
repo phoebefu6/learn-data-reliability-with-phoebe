@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Leader session 6 of 6. The monthly reliability report that does not need a meeting: error budget remaining, pages per week with the actionable share, and toil hours, each next to its target. Why a single reliability score is refused, what to promise upward and what never to, and Harborlight's first month on one page.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Reporting reliability upward - learn data reliability with phoebe">
+<meta property="og:description" content="Leader session 6 of 6. Three numbers, monthly, forever. 95.14 is a success against 95 and a failure against 97, and the reader must not have to guess which.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/a6-reporting-upward.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Reporting reliability upward - learn data reliability with phoebe">
+<meta name="twitter:description" content="Budget remaining, pages per week, toil hours. Never a single score. Promise a design, a measurement and a cadence, never fewer incidents.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Leader session 6 · Reporting reliability upward - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Leader session 6 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Leader session 6 of 6</div>
+    <h1>Reporting reliability <span class="accent">upward</span></h1>
+    <p class="sub">The monthly reliability report that works is the one nobody has to call a meeting about. Three numbers, each next to the target it is measured against, each driving one behaviour, on one page. Harborlight's first month reads like this: at the 97 percent target the error budget ran out on night 15, and at 95 percent 3 percent of it was left; 5 pages in 30 nights, 1.2 a week, every one of them actionable, where the old policy paged 35 times at 8.2 a week with 14 percent actionable; and the hours of hand-run work the on-call could count. Tonight is how to write that page, what to promise on top of it, and the one thing a leader promises never to do.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Advanced</span>
+      <span class="chip audience">Data and analytics leaders</span>
+      <span class="chip audience">Anyone who has been asked for "a reliability score"</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · Three numbers, monthly, forever</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: write the first report</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 6 sits in the leader track</h2>
+    </div>
+    <p class="lede">Six sessions, one running example, and this is the last one. Session 1 put a number on the <strong>orders</strong> pipeline at Harborlight: 685 of 720 hourly partitions good, 95.14 percent. Session 2 made the number an error budget. Session 3 designed the on-call and cut 35 pages to 5. Session 4 wrote the five postmortems. Session 5 priced the backfills and the debt they left behind. Every one of those produced a number, and tonight three of them go on one page that travels upward every month without anyone having to explain it. The builder track's session 7 supplies the third number, toil hours, and its session 8 replays the whole contract over thirty nights to check that the numbers on the page are the ones the pipeline actually produced.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The first monthly reliability report for one pipeline, on one page, in three numbers with the target beside each. The one sentence you say when somebody asks for a single reliability score. A stop rule, written down, with the name of the person who protects it when a feature is late. And a date in the calendar, one a quarter, which is the only time the target is allowed to move.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the report has to work without a meeting<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A reliability report that needs a meeting to be understood is read once, in the meeting, by the people who were there. A report that can be read in ninety seconds by somebody who was not in the meeting is read every month, by everyone it is sent to, and compared with last month's. The second kind is the only kind that changes behaviour over a year, and the test for it is simple: could the person who signs the settlement report read this page and know, without asking, whether the promise was kept?</p>
+        <p>Three things make a page pass that test. Few numbers, so the reader does not have to choose which one matters. The target next to each number, so the reader does not have to remember it. And the same three numbers every month, in the same places, so that the only thing that changes is the values. Everything a leader is tempted to add to the page, a trend line, a narrative, a score, a colour, makes it need a meeting again.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's first attempt at a reliability report was a slide with eleven metrics, three of them green, a "data health score" of 87, and a paragraph about the outage. It was presented once. The second attempt was three numbers with three targets on half a page. Nobody presented it; it was sent. The settlement lead replied to it within the hour with one question, which was whether 95 was the right target for her report, and that question is the quarterly review doing its job six weeks early.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Where each of the three numbers came from<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Error budget remaining</strong> is session 2's arithmetic: 100 percent minus the target, as a count of bad partitions allowed in the window, minus the bad partitions spent. When it goes negative the report says the night it ran out instead of a negative number, because "ran out on night 15" is something a reader can picture and "minus 13.4" is not.</li>
+          <li><strong>Pages per week with the actionable share</strong> is session 3's on-call design, measured. Pages in the window divided by weeks, and the fraction of those pages that were the first page inside a real incident rather than noise.</li>
+          <li><strong>Toil hours</strong> is the builder track's session 7: hours spent on work that is manual, repetitive, and would not have been needed if the pipeline were better built. Backfills run by hand, restarts, checks done by eye. Session 5's backfill list is most of it.</li>
+          <li><strong>The target beside each</strong> is session 2's choice, made from history: 95 percent this quarter, with a plan to earn 97. It is on the page every month so that nobody has to remember it and nobody can quietly forget it.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers SLO compliance, budget burn and toil as the three numbers</span>
+      <h2>The report that does not need a meeting</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">Three numbers, monthly, forever. Not because three is magic, but because each of the three drives a different decision and nothing else on a reliability dashboard does. Budget remaining decides whether the team ships or hardens this month. Pages per week decides whether the on-call design is humane and the alerts are honest. Toil hours decides what gets automated next. A fourth number would have to drive a fourth decision, and there is not one.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three tiles side by side making up the one-page report. Error budget remaining: ran out on night 15 with a tag reading target 97 percent, same month at 95 percent 3 percent left and promise kept, achieved 95.14, 685 of 720 good; drives harden or ship. Pages per week: 1.2 a week, 5 in 30 nights, all 5 actionable, one per incident, under burn-rate alerting; old policy 8.2 a week, 35 pages, 14 percent actionable; drives on-call load and alert policy, not the target. Toil hours: hours of hand-run work, backfills by hand, restarts, checks, counted weekly by the on-call, measured not estimated; drives what to automate next and the debt list gets funded.">
+        <style>
+          .a6aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a6aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a6aK { font: 800 11px Inter, sans-serif; fill: #0B1220; }
+          .a6aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a6aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a6aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a6aR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <rect x="14" y="20" width="276" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="a6aT" x="152" y="42" text-anchor="middle">Error budget remaining</text>
+        <rect x="14" y="60" width="276" height="190" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a6aR" x="26" y="90">ran out on night 15</text>
+        <rect x="160" y="76" width="124" height="20" rx="5" fill="#F59E0B"></rect>
+        <text class="a6aK" x="222" y="90" text-anchor="middle">target 97 percent</text>
+        <text class="a6aB" x="26" y="118">same month at 95 percent:</text>
+        <text class="a6aB" x="26" y="134">3 percent left, promise kept</text>
+        <text class="a6aM" x="26" y="160">achieved 95.14 · 685 of 720 good</text>
+        <text class="a6aN" x="26" y="196">drives</text>
+        <text class="a6aB" x="26" y="212">budget burning: harden, stop features</text>
+        <text class="a6aB" x="26" y="228">budget healthy: ship</text>
+
+        <rect x="300" y="20" width="276" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="a6aT" x="438" y="42" text-anchor="middle">Pages per week</text>
+        <rect x="300" y="60" width="276" height="190" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a6aN" x="312" y="90">1.2 a week · 5 in 30 nights</text>
+        <text class="a6aB" x="312" y="118">all 5 actionable: one per incident</text>
+        <text class="a6aB" x="312" y="134">under burn-rate alerting</text>
+        <text class="a6aM" x="312" y="160">old policy: 8.2 a week, 35 pages,</text>
+        <text class="a6aM" x="312" y="176">14 percent actionable</text>
+        <text class="a6aN" x="312" y="196">drives</text>
+        <text class="a6aB" x="312" y="212">on-call load and alert policy</text>
+        <text class="a6aB" x="312" y="228">not the target: separate levers</text>
+
+        <rect x="586" y="20" width="276" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="a6aH" x="724" y="42" text-anchor="middle">Toil hours</text>
+        <rect x="586" y="60" width="276" height="190" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a6aN" x="598" y="90">hours of hand-run work</text>
+        <text class="a6aB" x="598" y="118">backfills by hand, restarts, checks</text>
+        <text class="a6aB" x="598" y="134">counted weekly by the on-call</text>
+        <text class="a6aM" x="598" y="160">measured, never estimated</text>
+        <text class="a6aN" x="598" y="196">drives</text>
+        <text class="a6aB" x="598" y="212">what to automate next</text>
+        <text class="a6aB" x="598" y="228">the debt list gets funded</text>
+
+        <rect x="14" y="278" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a6aN" x="38" y="290">Three numbers, each next to its target or its old policy. A single score would hide all three.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the one-page report as three tiles, and the behaviour each one drives.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Three numbers, and what each one drives<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Each number on the page has a decision attached to it. If a reader cannot say what they would do differently when the number moves, the number does not belong on the page.</p>
+        <table class="clean">
+          <thead><tr><th>Number</th><th>What sits beside it</th><th>What it drives</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Error budget remaining</strong>, or the night it ran out</td><td>The target it is measured against</td><td>Ship or harden this month. Burning: features stop and the debt list ships. Healthy: features ship.</td></tr>
+            <tr><td><strong>Pages per week</strong>, with the actionable share</td><td>The previous policy's number, until it is forgotten</td><td>Whether the on-call design is humane and the alert policy is honest. This is a separate lever from the target; the bench shows the page count does not move when the target does.</td></tr>
+            <tr><td><strong>Toil hours</strong></td><td>Last month's hours</td><td>What gets automated next. When toil rises, the top of the debt list is whatever the hours were spent on.</td></tr>
+          </tbody>
+        </table>
+        <p>Nothing else drives a decision the reader of the report can make. Incident count drives nothing, because most incidents are upstream. Mean time to recover drives the on-call's runbook, which is the team's business and not the report's. Data volume drives capacity, which is a different report. The discipline is not to leave those out because they are unimportant. It is to leave them out because the page has one job.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why a single "reliability score" is refused<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Somebody senior will ask for one number. It is a reasonable request from someone with forty reports to read, and the answer is still no, for two reasons that survive being said out loud in the meeting where the request is made.</p>
+        <ul>
+          <li><strong>A single score invites the team to define its own denominator.</strong> A score of 87 out of 100 has a formula behind it, and the team that is measured by the score writes the formula. Within two quarters the formula has been tuned so that the score goes up, and nobody outside the team can say what went up. Three numbers with visible denominators, partitions, pages and hours, cannot be tuned without somebody noticing.</li>
+          <li><strong>A percentage with no budget behind it is a mood.</strong> "Reliability is at 95.14 percent" tells the reader nothing unless they know whether the promise was 95 or 97. Attached to a budget it becomes a fact: 3 percent of the budget left, promise kept, or budget gone on night 15, promise broken for half the month. The score strips off exactly the part that made it a fact.</li>
+        </ul>
+        <p>The sentence for the meeting is short: the page has three numbers because they drive three decisions, and a single score would hide which of the three moved. Then hand over the page, which takes ninety seconds to read, which is less time than the score would have taken to argue about.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's "data health score" of 87 was built from eleven metrics weighted by the platform team. Two of the eleven were the orchestrator's success rate, counted by run. On the month of the five incidents, with 35 bad partitions and a budget gone on night 15 at 97 percent, the score was 89. It had gone up. The formula was not dishonest. It was simply owned by the people it measured, which is what a single score always is.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Harborlight's first month, as the page reads<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The first report is the month of the five incidents, written after the fact, because the first honest report is always a look back at a month the team already lived through. It is also the month that sets the target for the next one.</p>
+        <table class="clean">
+          <thead><tr><th>Number</th><th>This month</th><th>Beside it</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Achieved</strong></td><td>95.14 percent · 685 of 720 hourly partitions good · 35 bad in five incidents</td><td>Target proposed: 95 percent this quarter, 97 to be earned</td></tr>
+            <tr><td><strong>Error budget</strong></td><td>At 97 percent: budget of 21.6 ran out on <strong>night 15</strong>. At 95 percent: budget of 36, 3 percent left at night 30</td><td>At 99 percent it would have run out on night 9; at 99.9, night 4</td></tr>
+            <tr><td><strong>Pages</strong></td><td>5 in 30 nights · 1.2 a week · 5 of 5 actionable, 100 percent</td><td>Old policy: 35 pages · 8.2 a week · 5 actionable, 14 percent</td></tr>
+            <tr><td><strong>Toil</strong></td><td>The on-call's hours on hand-run backfills, restarts and checks, counted from session 5's list</td><td>First month: no comparison yet; next month has one</td></tr>
+          </tbody>
+        </table>
+        <p>The pages row deserves a sentence, because it is the one that surprises readers. The five burn-rate pages landed on nights 4, 9, 15, 21 and 27, one per incident, at the first bad hour of each. The old policy's 35 pages were the same five incidents paged once per bad partition. Same month, same incidents, seven times the pages, and only one in seven of them told the on-call anything new. The target row did not change the page count at all; the alert policy did. They are separate levers, and the report shows them separately for that reason.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The target goes next to the number, every time<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>95.14 percent is a success against a 95 percent target and a failure against 97. The same month, the same 35 bad partitions, the same pipeline, and the word that describes it flips on a number the reader was not shown. A report that gives the achieved figure without the target is asking the reader to guess which word applies, and readers guess in the direction of their last conversation with the team.</p>
+        <ul>
+          <li><strong>Every number carries its target on the same line.</strong> Not in a footnote, not on the previous page, not "as agreed in Q1". Next to it.</li>
+          <li><strong>The budget is stated as what happened, not as a fraction.</strong> "Ran out on night 15" or "3 percent left at night 30". A reader can picture a night. Nobody pictures 0.86 of a budget.</li>
+          <li><strong>When the target moves, the page says so.</strong> A quarter in which the target went from 95 to 97 shows both, with the date, so that a jump in "budget remaining" is not mistaken for the pipeline getting better or worse.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Toil hours: the number a leader borrows from the builder track<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Toil is work that is manual, repetitive, devoid of lasting value, and scales with the pipeline rather than with the team. The builder track's session 7 owns the definition, the measurement and the toil budget. What a leader needs from it is one number a month, and three rules about how that number is collected.</p>
+        <ul>
+          <li><strong>The on-call counts it, weekly, in hours.</strong> Not the manager, not at month end from memory. A tally kept during the week is honest; a reconstruction on the last day is a guess with a decimal point.</li>
+          <li><strong>It is measured, never estimated.</strong> An estimated toil number is the single score wearing a different hat. If the count was not kept one week, the page says "not counted", not a number.</li>
+          <li><strong>It is the debt list's first sort key.</strong> When toil goes up, whatever the hours went on is the item at the top of session 5's list. Eight hand-run backfills on night 21 are eight hours that a retry with a back-off would have been zero.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers what a leader promises upward, and the one thing never promised</span>
+      <h2>What to promise, and what never to</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">The report is a page; the promise is what a leader says on top of it. The wrong promise is the one everyone expects, fewer incidents next quarter, and it is wrong because incident count is mostly upstream and a leader who promises it has promised somebody else's weather. The right promise is three things the team controls entirely: a design, a measurement and a review cadence.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A year drawn as a horizontal timeline. Above it a band labelled feature plan, ships while the budget is healthy, waits while it burns. Between the band and the timeline a red line labelled stop rule: the plan may not cross this line while the budget is burning, the leader holds it. The timeline has twelve monthly ticks numbered 1 to 12, and four larger review points at the end of months 3, 6, 9 and 12 labelled Q1 to Q4 review, each marked target may move.">
+        <style>
+          .a6bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a6bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a6bM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .a6bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a6bR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <text class="a6bH" x="14" y="28">One year of the report: twelve monthly numbers, four places the target may move</text>
+
+        <rect x="40" y="44" width="800" height="40" rx="8" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a6bB" x="52" y="68">feature plan · ships while the budget is healthy, waits while it burns</text>
+
+        <line x1="40" y1="96" x2="840" y2="96" stroke="#991B1B" stroke-width="2"></line>
+        <text class="a6bR" x="52" y="114">stop rule: the plan may not cross this line while the budget is burning. The leader holds it.</text>
+
+        <text class="a6bH" x="240" y="152" text-anchor="middle">Q1 review</text>
+        <text class="a6bH" x="440" y="152" text-anchor="middle">Q2 review</text>
+        <text class="a6bH" x="640" y="152" text-anchor="middle">Q3 review</text>
+        <text class="a6bH" x="866" y="152" text-anchor="end">Q4 review</text>
+
+        <line x1="40" y1="170" x2="840" y2="170" stroke="#C4CDD9" stroke-width="1.5"></line>
+
+        <line x1="73" y1="164" x2="73" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="140" y1="164" x2="140" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="207" y1="164" x2="207" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="273" y1="164" x2="273" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="340" y1="164" x2="340" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="407" y1="164" x2="407" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="473" y1="164" x2="473" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="540" y1="164" x2="540" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="607" y1="164" x2="607" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="673" y1="164" x2="673" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="740" y1="164" x2="740" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+        <line x1="807" y1="164" x2="807" y2="176" stroke="#94A3B8" stroke-width="1.5"></line>
+
+        <circle cx="240" cy="170" r="9" fill="#0F172A"></circle>
+        <circle cx="440" cy="170" r="9" fill="#0F172A"></circle>
+        <circle cx="640" cy="170" r="9" fill="#0F172A"></circle>
+        <circle cx="840" cy="170" r="9" fill="#0F172A"></circle>
+
+        <text class="a6bM" x="73" y="192" text-anchor="middle">1</text>
+        <text class="a6bM" x="140" y="192" text-anchor="middle">2</text>
+        <text class="a6bM" x="207" y="192" text-anchor="middle">3</text>
+        <text class="a6bM" x="273" y="192" text-anchor="middle">4</text>
+        <text class="a6bM" x="340" y="192" text-anchor="middle">5</text>
+        <text class="a6bM" x="407" y="192" text-anchor="middle">6</text>
+        <text class="a6bM" x="473" y="192" text-anchor="middle">7</text>
+        <text class="a6bM" x="540" y="192" text-anchor="middle">8</text>
+        <text class="a6bM" x="607" y="192" text-anchor="middle">9</text>
+        <text class="a6bM" x="673" y="192" text-anchor="middle">10</text>
+        <text class="a6bM" x="740" y="192" text-anchor="middle">11</text>
+        <text class="a6bM" x="807" y="192" text-anchor="middle">12</text>
+
+        <text class="a6bB" x="240" y="214" text-anchor="middle">target may move</text>
+        <text class="a6bB" x="440" y="214" text-anchor="middle">target may move</text>
+        <text class="a6bB" x="640" y="214" text-anchor="middle">target may move</text>
+        <text class="a6bB" x="866" y="214" text-anchor="end">target may move</text>
+
+        <text class="a6bM" x="40" y="240">monthly ticks: the three numbers, target beside each, sent not presented</text>
+
+        <rect x="14" y="264" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a6bN" x="38" y="276">Twelve reports, four reviews. The number moves monthly; the target moves only at a review, history in hand.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the year as twelve reports and four reviews, with the stop rule the feature plan may not cross.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Promise a design, a measurement and a cadence, never fewer incidents<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Of Harborlight's five incidents, two were upstream: a late load on night 4 and an outage on night 9 that alone cost 14 partitions. A third, night 15's corrupt batch, was a type drifting in a source the team did not own. Three of five, 23 of 35 bad partitions, from outside the pipeline. A leader who promises fewer incidents has promised that the upstream will behave, and the upstream has not been told.</p>
+        <p>What the team controls entirely is three things, and they are what goes in the promise.</p>
+        <ul>
+          <li><strong>A design.</strong> The on-call is designed, not rostered: burn-rate alerting, a rising edge, 12 hours of suppression, a runbook the tired person can follow. Five pages a month instead of 35 is a design outcome and the team can promise it, because the design is theirs.</li>
+          <li><strong>A measurement.</strong> Good partitions over total partitions, over a rolling thirty nights, from the reader's side. The team can promise that the number on the page is the number the pipeline produced, every month, with no month skipped and no denominator changed.</li>
+          <li><strong>A review cadence.</strong> A report every month, sent. A review every quarter, at which the target may move and the debt list is reprioritised. The team can promise the dates.</li>
+        </ul>
+        <p>None of those three is affected by whether the upstream has a bad night. All three are visible in the report the following month. A promise that the promiser controls and the reader can check is the only kind worth writing down.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why the first report proposes 95 and a plan to earn 97, not 99<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The first report proposes a target, and the instinct upward is to propose an ambitious one. The service-reliability literature's advice on choosing targets is short and it is aimed at exactly this moment.</p>
+        <ul>
+          <li><strong>"Don't pick based on current performance."</strong> This cuts both ways. Not the team's best night, which is 99.9 percent and which broke as a promise on night 4. And not a round number the room likes the sound of. The target comes from the history, 685 of 720, and from what the reader can absorb, which the settlement lead answered in session 1.</li>
+          <li><strong>"Better to start with a loose target that you tighten."</strong> 95 percent this quarter is kept, with 3 percent of the budget to spare. It is a promise the team can make and keep in its first quarter of making promises, which is worth more than an ambitious one it breaks in week two. 97 is written down as the target to earn, with the debt item that gets there: the coverage check from session 5, worth 12 partitions, which on its own would have kept the 97 percent budget alive past night 15.</li>
+          <li><strong>"Have as few SLOs as possible."</strong> One objective on one pipeline for one reader. Not one per indicator, not one per dashboard. The moment there are six objectives on the page it needs a meeting again.</li>
+        </ul>
+        <p>99 is not proposed because the history says the budget would have run out on night 9, and a first report that proposes a target already broken by its own evidence teaches everyone who reads it that the numbers on the page are aspirations. Every report after that is read as one.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The quarterly review, the only place the target moves<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The number on the page moves every month. The target next to it moves only at the quarterly review, and the rule is absolute because the two failure modes it prevents are both common. The first is a target quietly loosened in a bad month so that the page stays green. The second is a target tightened in a good month by somebody senior who liked the number, on a pipeline whose history does not support it. Both are the same mistake: a target moved on one month's mood rather than a quarter's evidence.</p>
+        <ul>
+          <li><strong>The review has the last three reports in front of it.</strong> Three months of the same three numbers is enough to see a trend and not enough to forget the incidents behind it.</li>
+          <li><strong>The target may move in either direction.</strong> Up, if the budget has been kept three months running and the debt that made the difference is done. Down, if three months of history say the promise was never supportable, and it is said out loud that it is moving down and why.</li>
+          <li><strong>The reader is in the room.</strong> The person who signs the settlement report decides what she needs. The team decides what it can promise. The target is where those two meet, and neither side moves it alone.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The leader's own job: protecting the stop rule when a feature is late<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The stop rule was set in session 2: when the error budget is burning, features stop and hardening ships. It is easy to agree to in a quiet month. It is tested once, and only once, in a specific way: the budget runs out on night 15, the debt list says build the coverage check, and a feature somebody senior has promised a customer is due on the 20th. Everyone in the room knows what the rule says. The question is who says it.</p>
+        <p>That is the leader's job in the report, and it is the only part of the whole contract that cannot be delegated. The engineers can measure, design, alert, write the runbooks and the postmortems, price the debt. They cannot tell the person who promised the customer that the feature waits, because they do not have the standing, and if they try, the rule dies quietly and the next report has a footnote explaining why the budget was exceeded. The leader protects the rule by saying, in the meeting, before being asked: the budget is gone, the plan says hardening, the feature moves a week, and here is the debt item that ships instead and what it is worth.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's rule was tested in the second month. The budget was burning by the third week, the seller export was due, and the platform lead had the coverage check priced at 12 partitions from the previous month's evidence. The head of data said the sentence before the export's owner could ask for an exception, moved the export a week, and put the reason in the report: budget burning, stop rule applied, coverage check shipped. The export's owner did not like it. The third month's report had 3 pages, all actionable, and the export shipped a week late into a pipeline that had stopped losing shards.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Vendor incident tooling: a category, named once<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>There is a category of product that pages people, tracks incidents, hosts status pages and produces on-call analytics, and a team running the report above will be sold one. The category is real and the products in it are useful. What they are useful for is routing: getting the page to the right person, recording when it was acknowledged, and counting. What they cannot supply is any of the three numbers, because the numbers come from the contract the team wrote: the target from history, the pages from an alert policy the team designed, the toil from a tally the on-call kept.</p>
+        <ul>
+          <li><strong>Buy the routing, own the numbers.</strong> A tool that tells you pages per week is reading your alert policy back to you. If the policy is page-on-every-bad-partition, the tool will faithfully report 8.2 a week.</li>
+          <li><strong>The tool's "reliability score" is the single score again,</strong> with the denominator owned by a vendor instead of the team. The same refusal applies for the same reasons.</li>
+          <li><strong>No comparison between products is offered here,</strong> because the report is the same whichever one carries the page, and the choice belongs to the team that gets woken up.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Write the first report</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">No code, one pipeline, one page. Bring everything the previous five sessions produced for it: the measured number, the target, the pages, the debt list, the backfill hours. If you have nothing to hand, use Harborlight's month. The output is the first monthly report, the sentence for the single-score question, the stop rule with a name on it, and a date in the calendar.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Write the first monthly report on one page, three numbers, target beside each.</strong> Achieved, with good over total. Budget remaining, or the night it ran out, with the target on the same line and what the same month looked like at the target you are proposing. Pages per week with the actionable share, and the old policy beside it for the first few months. Toil hours, measured, or "not counted" if it was not. Nothing else. If you find yourself adding a chart, stop; the page is read, not presented.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the one sentence you say when somebody asks for a single score.</strong> Say it aloud to the person next to you and time it. Under fifteen seconds, no jargon, and it ends by handing over the page. The version that works names the three decisions the three numbers drive and says that a score would hide which one moved.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the stop rule and who protects it.</strong> One line: when the budget is burning, features stop and the top of the debt list ships; when it has run out, the rest of the month is hardening. Then a name. Not a role, a name, and it is the most senior person who will actually be in the room when a feature is late. If the name is not yours, go and get the person's agreement this week, because the rule is tested exactly once and it has to hold the first time.</p>
+      </div>
+      <div class="step">
+        <p><strong>Set the quarterly date the target is allowed to move.</strong> Four dates a year, in the calendar now, with the reader invited. Write under each: the last three reports in front of us, the target may move up or down, and only here. Between those dates the target is fixed, and any request to change it is answered with the date.</p>
+      </div>
+      <div class="step">
+        <p><strong>Send it.</strong> Not present it. Send the page to the reader, to whoever owns the feature plan, and to whoever asked for the score. Note who replies and what they ask. The first reply is the first quarterly review starting early, and it tells you whether the page passed the ninety-second test.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box bad">
+      <span class="label">✕ The report that needs a meeting</span>
+Data Platform Health: 89/100 (up 2). Orders pipeline availability 99.1% (orchestrator). Freshness SLA met 27/30 days. One major incident (upstream outage, resolved). Team continuing to focus on reliability improvements.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Harborlight's first monthly report, as sent</span>
+ORDERS PIPELINE, month 1 (30 nights, 720 hourly partitions)
+
+Achieved   95.14 percent (685 of 720 good, 35 bad in 5 incidents)
+Target     95 percent proposed this quarter. 97 to be earned; see debt item below.
+Budget     At 97: budget of 21.6, ran out night 15. At 95: budget of 36, 3 percent left at night 30.
+Pages      5 in 30 nights, 1.2 a week, 5 of 5 actionable (100 percent).
+           Previous policy on the same month: 35 pages, 8.2 a week, 14 percent actionable.
+Toil       On-call hours on hand-run backfills, restarts and checks: counted from month 1's backfill list.
+
+Stop rule  Budget burning: features wait, top debt item ships. Held by: head of data.
+Next debt  Coverage check on orders (rows and shards vs same hour last week). Worth 12 of this month's 35.
+Review     Target may move at the quarterly review on the first Tuesday of the quarter, and only there.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ The sentence for the single-score question</span>
+The page has three numbers because they drive three decisions: ship or harden, redesign the on-call or not, automate what next. A single score would hide which of the three moved. It takes ninety seconds to read; here it is.
+    </div>
+
+    <div class="callout tip">
+      <p><strong>The first report is allowed to be uncomfortable.</strong> It says 95.14 against a belief of 99, a budget gone on night 15 at the target people assumed, and 35 pages that were mostly noise. That discomfort is the report working. A first report that everyone is comfortable with has been written to be comfortable, and the second one will be too, and by the sixth nobody reads it.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>After the track</h2>
+      <span class="tag exercise">30 min, then monthly</span>
+    </div>
+    <ol>
+      <li>Send the first report. Then put the second one in the calendar for the same day next month, and write it on that day whether or not the month was interesting. The report's value is that it arrives.</li>
+      <li>Have the stop-rule conversation with the named person before the budget is burning, not during. Show them the page, the rule, and the sentence they will be asked to say. If they will not say it, the name is wrong and the rule is not yet real.</li>
+      <li>Book the four quarterly reviews with the reader invited. In the first one, bring the last three reports and the debt list, and let the target move only if three months of history and the reader both say it should.</li>
+      <li>Go back to the two numbers from session 1, believed and measured, and put them at the top of the first report as a footnote. That gap is the whole reason the report exists, and the people who read it a year from now will not remember there was one.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">The steering committee asks for a single reliability score so it can be tracked alongside other KPIs. Why is the request refused?</p>
+      <button class="qopt" type="button">A · Because reliability cannot be measured as a number</button>
+      <button class="qopt" type="button">B · Because a score invites the team to define its own denominator, and a percentage with no budget behind it is a mood; three numbers with visible denominators drive three decisions and cannot be quietly tuned</button>
+      <button class="qopt" type="button">C · Because scores need an external auditor</button>
+      <p class="qwhy">Harborlight's "data health score" went from 87 to 89 in the month the budget ran out on night 15. The formula was owned by the team it measured, which is what a single score always is.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">The report says the orders pipeline achieved 95.14 percent. Was the promise kept?</p>
+      <button class="qopt" type="button">A · Yes, because 95.14 is above 95</button>
+      <button class="qopt" type="button">B · No, because a reliable pipeline is 99 percent or better</button>
+      <button class="qopt" type="button">C · It depends on the target, which must sit next to the number: kept against 95 with 3 percent of the budget left, broken on night 15 against 97</button>
+      <p class="qwhy">Same month, same 35 bad partitions, and the word flips on a number the reader was not shown. A report that omits the target asks the reader to guess, and readers guess in the direction of their last conversation.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">In the first report, what does the head of data promise upward for next quarter?</p>
+      <button class="qopt" type="button">A · A design, a measurement and a review cadence, because those are what the team controls; incident count is mostly upstream</button>
+      <button class="qopt" type="button">B · Fewer incidents than the five this month</button>
+      <button class="qopt" type="button">C · 99 percent by the end of the quarter</button>
+      <p class="qwhy">Three of the five incidents, 23 of 35 bad partitions, came from upstream. The literature's advice is not to pick based on current performance and to start with a loose target that you tighten: 95 now, 97 to be earned, with the debt item that gets there.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Reporting reliability upward - SLO compliance, budget burn, toil; the three numbers</span>
+        <span class="note">Each number with the target beside it and the decision it drives; the single score refused; the promise as design, measurement and cadence.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book, Service Level Objectives - the target advice</span>
+        <span class="note">"Don't pick based on current performance", "better to start with a loose target that you tighten", "have as few SLOs as possible", as the reason for 95 and a plan to earn 97.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Harborlight: the first month's report</span>
+        <span class="note">95.14 percent; budget out on night 15 at 97 and 3 percent left at 95; 5 pages at 1.2 a week and 100 percent actionable against 35 at 8.2 a week and 14 percent.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Vendor incident tooling</span>
+        <span class="note">Named as a category: paging, incident tracking, status pages. Buy the routing, own the numbers. No product comparison.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Toil: definition, measurement and the toil budget</span>
+        <span class="note">Builder session 7 owns it. Here the leader borrows one number a month and three rules for how it is counted.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Replaying the contract over thirty nights</span>
+        <span class="note">Builder session 8 owns the bench that produced every number on the page. Here the numbers are reported, not computed.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. The AI observability course owns those; the objects here are tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 6 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Three numbers, monthly, forever</b><span>Budget remaining or the night it ran out, pages per week with actionable share, toil hours.</span></div>
+      <div class="cheat-item"><b>Target beside the number</b><span>95.14 is kept against 95 and broken on night 15 against 97. Never make the reader guess.</span></div>
+      <div class="cheat-item"><b>No single score</b><span>It invites the team to own the denominator. A percentage with no budget behind it is a mood.</span></div>
+      <div class="cheat-item"><b>Each number drives a decision</b><span>Ship or harden; redesign the on-call or not; automate what next. Nothing else goes on the page.</span></div>
+      <div class="cheat-item"><b>Promise what you control</b><span>A design, a measurement, a review cadence. Never fewer incidents; incidents are mostly upstream.</span></div>
+      <div class="cheat-item"><b>95 now, 97 earned</b><span>Start with a loose target you tighten. Not 99: the history says night 9.</span></div>
+      <div class="cheat-item"><b>Target moves quarterly, only</b><span>Four dates a year, last three reports in hand, reader in the room, either direction.</span></div>
+      <div class="cheat-item"><b>The leader holds the stop rule</b><span>Budget burning, feature late: say the sentence before being asked. Nobody else has the standing.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Leader session 6 of 6 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="a5-backfills-and-debt.html">← Leader session 5 · Backfills and debt</a>
+      <a href="../index.html">All sessions →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

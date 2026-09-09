@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 8 of 8. Thirty nights on call for Harborlight's orders pipeline, replayed against your SLO target and alert policy. Page on every breach and you get 35 pages, five of them useful. Burn-rate alerting gets five, all useful. The target only decides the budget.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="The on-call bench - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 8 of 8. 35 pages or 5. The target decides the budget; the policy decides the pages.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b8-on-call-bench.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The on-call bench - learn data reliability with phoebe">
+<meta name="twitter:description" content="Thirty nights, five incidents, and two levers that people keep confusing for one.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 8 · The on-call bench - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 8 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 8 of 8</div>
+    <h1>The on-call <span class="accent">bench</span></h1>
+    <p class="sub">Seven sessions of contract, and now the month you would actually have lived. The bench below replays Harborlight's last thirty nights: 720 hourly partitions, 35 of them bad, five incidents. You pick the target and the alert policy, and it computes what the budget did, when it ran out, how often the pager went, and how many of those pages told the on-call something new. Two levers, and the most common mistake in the field is treating them as one.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Hardest</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip audience">Whoever carries the pager</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:3">3-15 · Two levers, not one</span>
+      <span class="a3" style="flex:6">15-40 · Build-along: live the month</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>What the bench measures</h2>
+    </div>
+    <p class="lede">A reliability contract has two independent parts: the <strong>target</strong>, which decides how much failure you have promised to absorb, and the <strong>alert policy</strong>, which decides when a human is woken. Teams routinely tighten the first hoping to fix the second, and the bench shows why that never works: the page count does not move when the target does.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The month replayed under four targets and three policies, all computed. The number that ends the "just alert on everything" argument: 35 pages, five of them useful, against five pages, all useful, for the same five incidents. And the other trap, computed too: promise the current p50 night for every night and the budget is gone on night 4 of 30.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the target and the policy are separate levers<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The target is a promise about the month: this proportion of partitions will be good. It sets the error budget, which is the number of bad partitions you can afford before the promise is broken. The alert policy is a rule about the hour: under what pattern of bad partitions does the pager go. One is arithmetic over the window; the other is a decision about the next sixty minutes.</p>
+        <p>Because they are separate, tightening the target does not reduce pages and loosening it does not add them. What tightening the target does is exhaust the budget sooner, which is a conversation with the business about what to stop shipping, not a conversation with the on-call about sleep.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight moved the target from 97 to 99 percent after a bad quarter, on the theory that a stricter promise would make the pipeline more reliable. Pages that month: identical. Budget exhausted: night 9 instead of night 15. The pipeline had not changed and the on-call had not slept any better; the team had simply promised something the history said it could not deliver.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What is real here<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>The history.</strong> 720 hourly partitions, fixed and identical for every learner. 35 are bad, in five incidents: night 4 late load (3), night 9 upstream outage (14), night 15 corrupt batch (6, on time and wrong), night 21 flapping connector (8 scattered), night 27 partial load (4). Achieved compliance 95.14 percent.</li>
+          <li><strong>The budget.</strong> One hundred percent minus the target, times 720. At 97 percent that is 21.6 bad partitions; at 99.9 it is 0.72, less than one.</li>
+          <li><strong>The pages.</strong> "Every bad partition" pages on each bad hour. "Multi-window burn rate" pages when the two-hour window burns at 14.4 times the sustainable rate or the twelve-hour window at 3 times, on the rising edge only, never twice inside twelve hours. Those windows and rates are this bench's choices, stated as such.</li>
+          <li><strong>Actionable</strong> is defined mechanically: the first page inside a real incident. Nothing about the human is modelled.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the matrix of targets and policies</span>
+      <h2>The matrix, with the numbers it actually produces</h2>
+      <span class="tag concept">10 min live</span>
+    </div>
+    <p class="lede">Read the two tables separately, because they are about two different things. The first is what the target does to the budget. The second is what the policy does to the pager. Nothing in either table depends on the other.</p>
+
+    <table class="clean">
+      <thead><tr><th>Target</th><th>Budget (bad partitions allowed)</th><th>Budget left at night 30</th><th>Exhausted on night</th></tr></thead>
+      <tbody>
+        <tr><td>95 percent</td><td>36</td><td><strong>3 percent</strong></td><td>never</td></tr>
+        <tr><td>97 percent</td><td>21.6</td><td>0</td><td><strong>15</strong></td></tr>
+        <tr><td>99 percent</td><td>7.2</td><td>0</td><td><strong>9</strong></td></tr>
+        <tr><td>99.9 percent, the current p50 night promised every night</td><td>0.72</td><td>0</td><td><strong>4</strong></td></tr>
+      </tbody>
+    </table>
+
+    <table class="clean">
+      <thead><tr><th>Alert policy</th><th>Pages in 30 nights</th><th>Pages per week</th><th>Actionable</th><th>Incidents paged</th></tr></thead>
+      <tbody>
+        <tr><td>No alerting</td><td>0</td><td>0</td><td>-</td><td>0 of 5</td></tr>
+        <tr><td>Page on every bad partition</td><td><strong>35</strong></td><td><strong>8.2</strong></td><td>5, which is <strong>14 percent</strong></td><td>5 of 5</td></tr>
+        <tr><td>Multi-window burn rate</td><td><strong>5</strong></td><td><strong>1.2</strong></td><td>5, which is <strong>100 percent</strong></td><td>5 of 5</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <p><strong>Both policies catch all five incidents.</strong> The difference is thirty pages that told the on-call something they already knew: the outage on night 9 alone is fourteen of them. Coverage is the same. Sleep is not.</p>
+    </div>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: error budget remaining over thirty nights for four targets, with the 99.9 percent line hitting zero on night 4, 99 percent on night 9, 97 percent on night 15, and 95 percent ending at 3 percent. Right panel: pages under two policies, 35 with five useful against 5 with five useful.">
+        <style>
+          .b8aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b8aB { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b8aW { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .b8aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b8aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b8aG { font: 800 11px Inter, sans-serif; fill: #3A2400; }
+        </style>
+
+        <text class="b8aH" x="40" y="30">Budget remaining by night, four targets</text>
+        <line x1="40" y1="230" x2="440" y2="230" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="40" y1="60" x2="40" y2="230" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <text class="b8aB" x="40" y="246">night 1</text>
+        <text class="b8aB" x="400" y="246">night 30</text>
+        <text class="b8aB" x="6" y="64">100%</text>
+        <text class="b8aB" x="18" y="232">0</text>
+
+        <polyline points="40,60 80,68 146,74 200,80 240,120 306,150 360,190 400,220 440,226" fill="none" stroke="#1E293B" stroke-width="2.5"></polyline>
+        <text class="b8aN" x="380" y="212">95%: 3% left</text>
+
+        <polyline points="40,60 80,80 146,100 200,140 240,230" fill="none" stroke="#94A3B8" stroke-width="2.5"></polyline>
+        <text class="b8aG" x="200" y="128">97% out night 15</text>
+
+        <polyline points="40,60 80,110 146,230" fill="none" stroke="#94A3B8" stroke-width="2.5"></polyline>
+        <text class="b8aG" x="110" y="102">99% night 9</text>
+
+        <polyline points="40,60 80,230" fill="none" stroke="#991B1B" stroke-width="2.5"></polyline>
+        <text class="b8aR" x="44" y="130">99.9%</text>
+        <text class="b8aR" x="44" y="144">night 4</text>
+
+        <text class="b8aH" x="500" y="30">Pages in 30 nights, two policies</text>
+        <rect x="520" y="60" width="120" height="170" rx="4" fill="#991B1B"></rect>
+        <text class="b8aW" x="580" y="130" text-anchor="middle">35 pages</text>
+        <text class="b8aW" x="580" y="150" text-anchor="middle">5 useful</text>
+        <text class="b8aB" x="580" y="246" text-anchor="middle">every bad partition</text>
+
+        <rect x="700" y="206" width="120" height="24" rx="4" fill="#1E293B"></rect>
+        <text class="b8aW" x="760" y="223" text-anchor="middle">5 pages</text>
+        <text class="b8aH" x="760" y="196" text-anchor="middle">5 useful</text>
+        <text class="b8aB" x="760" y="246" text-anchor="middle">burn rate</text>
+
+        <rect x="40" y="286" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b8aN" x="64" y="298">The left chart does not change when you change the policy. The right one does not change when you change the target.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - two levers, two charts, and neither moves the other.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Live the month</h2>
+      <span class="tag demo">★ 25 min · everyone builds</span>
+    </div>
+    <p class="lede">The bench is live below. Bars are bad partitions per night, the amber badge is a page, and nights after the budget ran out turn red underneath. Work the steps in order.</p>
+
+    <div data-rel-bench></div>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Start at 97 percent with no alerting.</strong> Budget of 21.6 bad partitions, exhausted on night 15. All five incidents happened and nobody was told; every one was found by whoever opened the dashboard first. That is the baseline every policy is measured against.</p>
+      </div>
+      <div class="step">
+        <p><strong>Switch the policy to "page on every bad partition".</strong> 35 pages, 8.2 a week. Hover night 9: fourteen pages for one outage, the first one useful and the other thirteen telling the on-call the source was still down. Five of 35 pages were the first word of an incident.</p>
+      </div>
+      <div class="step">
+        <p><strong>Switch to multi-window burn rate.</strong> Five pages: nights 4, 9, 15, 21 and 27, each at the first bad hour of its incident. 1.2 a week, all five actionable. Notice night 21, the flapping connector: eight scattered bad hours, one page, because the twelve-hour window sees the pattern the two-hour window cannot.</p>
+      </div>
+      <div class="step">
+        <p><strong>Now change only the target: 95, then 99, then 99.9.</strong> Watch the pages. They do not move. Watch the budget: 3 percent left, then exhausted night 9, then exhausted night 4. This is the whole lesson in three clicks.</p>
+      </div>
+      <div class="step">
+        <p><strong>Sit on 99.9 percent for a moment.</strong> That is Harborlight's typical good night, promised for every night. The budget is less than one bad partition for the month, and the first incident spends it before dawn on night 4. Everything after that is a broken promise, regardless of how well anyone responds.</p>
+      </div>
+      <div class="step">
+        <p><strong>Go back to 95 percent.</strong> Three percent of budget left at night 30, which is one bad partition of headroom. That is what the history actually supports, and session 2 is where you decide whether to promise it as it stands or fund the work that earns 97.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write down the pair you would sign for Monday.</strong> A target the history supports, and a policy that pages once per incident. If you find yourself wanting a stricter target because the pager is too noisy, you have the levers confused.</p>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>What the bench leaves out, on purpose.</strong> Every bad partition counts the same. A corrupt settlement total is worse than a late one, and a real budget would weight them. Add that first when you build your own; it changes which incidents burn the most and does not change which policy pages sensibly.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Closing the track</h2>
+      <span class="tag exercise">45 min</span>
+    </div>
+    <ol>
+      <li>Replay your own last thirty nights from the partition log: budget by night under your current target, and pages under your current policy. Count how many pages were the first word of an incident.</li>
+      <li>Compute the target your history actually supports at the 3-percent-headroom level and compare with the one in your contract.</li>
+      <li>If you page on thresholds, write the burn-rate version and run both over the same month. Keep whichever pages once per incident.</li>
+      <li>Put the two numbers, budget remaining and pages per week, in the monthly report from leader session 6, and keep them there.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">Harborlight tightens the target from 97 to 99 percent. What happens to the number of pages?</p>
+      <button class="qopt" type="button">A · Pages increase, because more partitions now count as breaches</button>
+      <button class="qopt" type="button">B · Pages decrease, because the team responds faster under a stricter promise</button>
+      <button class="qopt" type="button">C · Nothing - the policy decides the pages and the target decides the budget, which is now exhausted on night 9 instead of 15</button>
+      <p class="qwhy">The two levers are independent. Tightening the target changes when the promise breaks; it does not change when the pager goes.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Both alert policies catch all five incidents. Why prefer burn-rate alerting?</p>
+      <button class="qopt" type="button">A · Because it produces 5 pages, all useful, against 35 pages of which 30 repeat what the on-call already knew</button>
+      <button class="qopt" type="button">B · Because it catches incidents earlier</button>
+      <button class="qopt" type="button">C · Because it lowers the number of bad partitions</button>
+      <p class="qwhy">Coverage is identical. The difference is entirely in repeats: night 9's outage alone produces fourteen threshold pages, thirteen of them saying the source is still down.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Why is 99.9 percent the trap for a pipeline that achieved 95.14?</p>
+      <button class="qopt" type="button">A · Because three nines is only appropriate for request-driven services</button>
+      <button class="qopt" type="button">B · Because it is the current typical good night promised for every night, so the budget is less than one bad partition and the first incident exhausts it on night 4</button>
+      <button class="qopt" type="button">C · Because burn-rate alerting cannot be computed at that target</button>
+      <p class="qwhy">The service-reliability guidance is explicit: do not pick a target from current performance. A p50 night promised for every night is a budget of 0.72 partitions and a broken promise by dawn on night 4.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book - error budgets and "don't pick based on current performance"</span>
+        <span class="note">The 99.9 percent trap is that rule computed against a real month.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE workbook - error budget as 100 percent minus the SLO</span>
+        <span class="note">Applied at four targets over 720 events, with the exhaustion night for each.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Multi-window burn-rate alerting against threshold alerting</span>
+        <span class="note">Both computed over the same month. The bench's windows and rates are its own stated choices.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Weighting bad partitions by impact</span>
+        <span class="note">Named as the first extension. Every partition counts the same here.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">How a bad partition is detected</span>
+        <span class="note">Not covered by design. The data observability course owns detection; here a bad partition only has to be counted.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 8 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Two levers</b><span>Target sets the budget; policy sets the pages. Neither moves the other.</span></div>
+      <div class="cheat-item"><b>35 or 5</b><span>Same five incidents caught. Thirty pages of "still down".</span></div>
+      <div class="cheat-item"><b>Actionable rate</b><span>First page inside an incident. 14 percent against 100.</span></div>
+      <div class="cheat-item"><b>95 percent</b><span>What the history supports: 3 percent budget left, one partition of headroom.</span></div>
+      <div class="cheat-item"><b>99.9 is the trap</b><span>The p50 night promised every night. Budget 0.72, gone on night 4.</span></div>
+      <div class="cheat-item"><b>Flapping needs the slow window</b><span>Eight scattered bad hours, one page, because twelve hours sees the pattern.</span></div>
+      <div class="cheat-item"><b>Noisy pager, wrong lever</b><span>If you want a stricter target because of noise, change the policy instead.</span></div>
+      <div class="cheat-item"><b>Weight by impact next</b><span>A corrupt total is worse than a late one. Your budget should know.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 8 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b7-toil.html">← Builder session 7 · Toil</a>
+      <a href="../index.html">All sessions →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+<script src="../assets/rel-live.js?v=1"></script>
+</body>
+</html>

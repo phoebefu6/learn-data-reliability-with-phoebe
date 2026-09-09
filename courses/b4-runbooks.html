@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 4 of 8. A runbook has one job: get a tired person who did not build the pipeline from a page to a safe state without a judgement call. The first three steps that never change, what goes on the page and what stays off it, one runbook bound to each burn-rate alert by name, and the quarterly drill that keeps it true. Written for Harborlight's night 9 outage, where the runbook's job was a message, not a debugging tree.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Runbooks a tired person can follow - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 4 of 8. Confirm the page, decide if the report is at risk, tell one person. No decisions above that line.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b4-runbooks.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Runbooks a tired person can follow - learn data reliability with phoebe">
+<meta name="twitter:description" content="Five alerts, five runbooks, each opened about once a month, each drilled so it stays true.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 4 · Runbooks a tired person can follow - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 4 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 4 of 8</div>
+    <h1>Runbooks a <span class="accent">tired person</span> can follow</h1>
+    <p class="sub">Session 3 ended at the page and its first sentence. Tonight is what the page points at. A runbook is not documentation and it is not a debugging guide; it is the shortest path from "my phone just buzzed" to "the settlement report is safe and the right person knows", written for somebody who is tired, has never seen this pipeline, and is reading on a phone. Harborlight's night 9 is the case throughout: fourteen partitions missing, nothing on this side able to fix it, and a runbook whose fourth step was a message rather than a tree of things to try.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip audience">Whoever is on call this week</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · What a runbook is for at 03:00</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: write one for the outage</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where tonight sits in the builder track</h2>
+    </div>
+    <p class="lede">Eight sessions, one artifact: a <strong>reliability contract</strong> for one pipeline. Session 1 measured it, session 2 set the target, session 3 turned the target into a budget and a burn-rate alert that pages five times a month for Harborlight's five incidents. Tonight each of those five pages gets a <strong>runbook</strong>, bound to it by name, so that the person holding the phone at 03:00 is never asked to remember anything. Session 5 is the backfill the runbook hands off to once the source is back.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> One complete runbook for the upstream-outage page, as a text file you can put in a repository: the alert it binds to, three steps that need no judgement, a confirming query with its expected output printed underneath, a pre-agreed safe state for the settlement report, a message template with three blanks, one escalation name and a last-drilled date. A binding from the session 3 alert to that runbook. And a timed drill against night 9's real history, which is the only way to know the page works.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the reader, not the author, decides what a runbook is<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The person who writes a runbook knows the pipeline, is awake, and is sitting at a keyboard. The person who reads it is none of those things. Night pages at Harborlight went to a rota of six engineers, four of whom had never touched the orders pipeline, and the median page arrived at 02:40. Every design decision on the page follows from writing for that reader: short, exact, and free of anything that asks them to weigh options.</p>
+        <p>A runbook that says "check whether the source looks healthy" has asked a tired stranger to make a judgement about a system they do not know. A runbook that says "run Q1; the expected output is one row with <code class="mono">answered = 0</code>" has asked them to compare two things. The second one works at 02:40. The first one produces a different outcome every night, depending on who is on the rota.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's old runbook for the orders pipeline was a wiki page titled "Orders pipeline troubleshooting", 1,900 words, last edited fourteen months earlier, opening with an architecture diagram. On night 9 the on-call read it for twenty minutes, tried three of its suggestions against a source that was simply down, and told the settlement team at 05:10. The report was late by two hours. The information the settlement team needed had been available at 00:20, when the page fired.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary tonight adds<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Runbook</strong> - one page, bound to one alert, that takes the reader from the page to a safe state. Not a troubleshooting guide, not an architecture document.</li>
+          <li><strong>Safe state</strong> - the condition of the downstream report that the runbook aims for: held, served stale, or scheduled for backfill. Decided per report, in advance, by the people who read that report.</li>
+          <li><strong>The first three steps</strong> - confirm the page is real by looking at one thing, decide whether the report is at risk by one rule, tell one named person. The same on every runbook, before any diagnosis.</li>
+          <li><strong>The line</strong> - the point on the page below which exactness is required and above which no decision is permitted. Everything above the line is a lookup or a comparison.</li>
+          <li><strong>Confirming query</strong> - the one query that proves the page is the incident this runbook covers, with its expected output printed under it so the reader compares rather than interprets.</li>
+          <li><strong>Binding</strong> - the alert definition names its runbook; the page carries the link. A page without a link is a page asking the reader to remember where the document lives.</li>
+          <li><strong>Drill</strong> - running the runbook against a past night's history with the clock pinned, timed, and recording the date and minutes at the top of the page.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers structure and the first three steps</span>
+      <h2>The reader is tired, new, and holding a phone</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">A runbook has exactly one job: get a person who did not build the pipeline from a page to a safe state without a judgement call. Everything that serves that job goes on the page. Everything else, however true and however useful in daylight, goes somewhere else.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A runbook page skeleton. Header: the runbook title, the alert it binds to and the last-drilled date. Three steps: confirm the page is real, decide whether the settlement report is at risk, tell one named person. A red dashed line labelled no decisions above this line. Below the line: the confirming query with expected output, the safe state, the message template, escalation, and the last-drilled record. Annotations on the right describe the reader, the three unchanging steps, exactness below the line, and what is not on the page.">
+        <style>
+          .b4aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .b4aW { font: 700 11px Inter, sans-serif; fill: #fff; }
+          .b4aH { font: 800 11px Inter, sans-serif; fill: #0B1220; }
+          .b4aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .b4aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b4aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b4aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <rect x="14" y="16" width="520" height="382" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <rect x="26" y="28" width="496" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="b4aT" x="38" y="50">RUNBOOK · orders / upstream outage</text>
+        <text class="b4aM" x="38" y="82">binds to: orders.burn.source-down · last drilled: 2026-08-14 · 11 min</text>
+
+        <rect x="26" y="94" width="496" height="26" rx="6" fill="#CBD5E1"></rect>
+        <text class="b4aH" x="38" y="111">1 · confirm the page is real: run Q1, match the expected output</text>
+        <rect x="26" y="126" width="496" height="26" rx="6" fill="#CBD5E1"></rect>
+        <text class="b4aH" x="38" y="143">2 · is the settlement report at risk: run Q2, apply the one rule</text>
+        <rect x="26" y="158" width="496" height="26" rx="6" fill="#CBD5E1"></rect>
+        <text class="b4aH" x="38" y="175">3 · tell one named person: the duty lead on the rota, then continue</text>
+
+        <text class="b4aR" x="522" y="197" text-anchor="end">no decisions above this line</text>
+        <line x1="26" y1="202" x2="522" y2="202" stroke="#991B1B" stroke-width="2" stroke-dasharray="6 4"></line>
+
+        <rect x="26" y="212" width="496" height="28" rx="6" fill="#1E293B"></rect>
+        <text class="b4aW" x="38" y="230">Q1 · the confirming query, with its expected output printed under it</text>
+        <rect x="26" y="246" width="496" height="28" rx="6" fill="#94A3B8"></rect>
+        <text class="b4aH" x="38" y="264">safe state · settlement report: HOLD with a banner, pre-agreed</text>
+        <rect x="26" y="280" width="496" height="28" rx="6" fill="#94A3B8"></rect>
+        <text class="b4aH" x="38" y="298">message template · three blanks, sent to the settlement channel</text>
+        <rect x="26" y="314" width="496" height="28" rx="6" fill="#CBD5E1"></rect>
+        <text class="b4aH" x="38" y="332">escalation · 05:30 and still silent: call the head of data platform</text>
+        <rect x="26" y="348" width="496" height="28" rx="6" fill="#CBD5E1"></rect>
+        <text class="b4aH" x="38" y="366">last drilled 2026-08-14 · walked against night 9 in 11 minutes</text>
+
+        <text class="b4aH" x="560" y="50">The reader</text>
+        <text class="b4aM" x="560" y="68">tired, new to the pipeline, holding a phone.</text>
+        <text class="b4aM" x="560" y="86">Every line on the page is written for them.</text>
+
+        <text class="b4aH" x="560" y="118">Steps 1 to 3 never change</text>
+        <text class="b4aM" x="560" y="136">Look at one thing. Apply one rule. Tell one</text>
+        <text class="b4aM" x="560" y="152">person. Identical on all five orders runbooks.</text>
+
+        <text class="b4aR" x="560" y="197">Above the line: no judgement calls.</text>
+
+        <text class="b4aH" x="560" y="232">Below the line, exactness</text>
+        <text class="b4aM" x="560" y="250">The exact query and its expected output. The</text>
+        <text class="b4aM" x="560" y="266">one command. The exact words to send. Who to</text>
+        <text class="b4aM" x="560" y="282">call, by name, and at what time.</text>
+
+        <text class="b4aH" x="560" y="316">Not on the page</text>
+        <text class="b4aM" x="560" y="334">History, architecture, opinions, and anything</text>
+        <text class="b4aM" x="560" y="350">that needs a decision. Those go in the incident</text>
+        <text class="b4aM" x="560" y="366">package, read the next morning.</text>
+
+        <rect x="14" y="406" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b4aN" x="38" y="418">Night 9: step 4 was a message, not a debugging tree. Nothing on this side could fix fourteen missing partitions.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the runbook as a page skeleton, with the line above which nothing may need a decision.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The one job: from a page to a safe state, with no judgement calls<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Diagnosis is not the job. Fixing is not the job. The job is that, some minutes after the page, the downstream report is in a state its readers agreed to in advance and the person who owns that report knows. If the reader of the runbook also fixes the pipeline, good; the runbook did not ask them to, and it would still have done its job if they had not.</p>
+        <p>That framing is what makes a runbook usable by somebody who did not build the pipeline. A stranger cannot diagnose an unfamiliar system at 03:00, and a page that asks them to is a page that gets closed and an incident that gets found by the settlement team in the morning. A stranger can run a query, compare its output to a printed expectation, run one command and send one message. So that is what the page asks.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The first three steps, before any diagnosis<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every runbook for the orders pipeline opens with the same three steps, in the same order, and none of the three requires a decision. They are the same on all five runbooks so that the on-call learns them once and does them from memory on any page.</p>
+        <ul>
+          <li><strong>1 · Confirm the page is real by looking at one thing.</strong> Run the confirming query. Compare the output to the expected output printed beneath it. If it matches, this is the incident this runbook covers. If it does not, the page names which runbook to open instead. No interpretation of dashboards, no "does this look normal".</li>
+          <li><strong>2 · Decide whether the settlement report is at risk, by one rule.</strong> The report is signed at 07:00 against the previous day's 24 partitions. If the affected partitions belong to a day whose report has not been signed yet, the report is at risk. One query against the sign-off table says which; the reader reads the answer, they do not weigh it.</li>
+          <li><strong>3 · Tell one named person.</strong> The settlement duty lead on the rota, by name, before anything else is attempted. The message is one sentence: what is missing, from when, and that the report is going on hold. Diagnosing first is the mistake every tired engineer makes, because diagnosis feels like progress. Telling the reader of the report is progress.</li>
+        </ul>
+        <p>Only below those three does the page say anything specific to the incident. The rule is drawn on the page as a literal line, and the discipline is that nothing above it may ask the reader to choose.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What goes on the page, and what stays off it<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <table class="clean">
+          <thead><tr><th>On the page</th><th>Off the page, and where it lives instead</th></tr></thead>
+          <tbody>
+            <tr><td>The exact query to run, as text the reader can paste</td><td>The history of the pipeline and its incidents: the incident package, session 6</td></tr>
+            <tr><td>The exact expected output, printed under the query</td><td>The architecture: the design document, read in daylight</td></tr>
+            <tr><td>The one command that puts the downstream report in its safe state</td><td>Opinions about what should be changed: the postmortem's action list</td></tr>
+            <tr><td>Who to call, by name, with the number on the rota page it links to</td><td>Anything that needs a decision: the escalation, who is awake and paid to decide</td></tr>
+            <tr><td>The message template, with its blanks marked</td><td>Alternative things to try: a debugging tree is a judgement call in disguise</td></tr>
+            <tr><td>The date it was last drilled and how long the drill took</td><td>Explanations of why the steps work: a footnote at most, after the steps</td></tr>
+          </tbody>
+        </table>
+        <p>The left column is short because a phone screen is short. The right column is not deleted; it is moved to the document whose reader is awake. A runbook that carries the right column is a runbook the on-call scrolls past looking for the query, and every scroll at 03:00 is a chance to give up.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 9: when the runbook's job was communication<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>At 00:00 on night 9 the orders source API stopped answering. Fourteen partitions in a row did not land. The burn-rate page fired at hour 0. There was nothing on the Harborlight side that could make a source API answer, and the pipeline itself was healthy: it was polling a dead endpoint and correctly writing nothing.</p>
+        <p>A debugging tree for that night has no useful branches. Restarting the connector produces the same nothing. Checking credentials produces the same nothing. The runbook's step 4 for the upstream outage is therefore not a fix; it is a template message to the settlement team saying what is missing, since when, that the report is held with a banner, that nothing on this side can shorten the wait, and when the next update comes. The most valuable thing the on-call can do for fourteen hours is send that message at 00:20 and rerun the confirming query every thirty minutes until the source answers.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The settlement team's own account of night 9 was not "the data was late". It was "nobody told us until five". They had staff waiting on a report that could not exist yet, and a finance director asking why. A message at 00:20 would have sent those people home. That is why the outage runbook's most important line is a paragraph of plain prose with three blanks in it.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers binding, staleness and safe state</span>
+      <h2>One runbook per page, kept true by being used</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">A runbook is only as good as the moment it is opened. Three things decide that moment: whether the page carries a link to exactly one runbook, whether that runbook still describes the pipeline it was written for, and whether the safe state it aims at was agreed by the people who read the report. Under the burn-rate policy from session 3 there are <strong>five pages a month</strong>, one per incident, so five runbooks cover the month and each is opened about once.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five columns. Each has an alert name at the top, a qualifier read from the newest bad row of the partition log, an arrow down to a runbook name, the night and bad-partition count of the incident it covers, and an amber square marked 1 for one opening this month. Left to right: late-landing to Late load for night 4 with 3 bad, source-down to Upstream outage for night 9 with 14 bad, unreconciled to Corrupt batch for night 15 with 6 bad, connector to Flapping connector for night 21 with 8 bad, short-shards to Partial load for night 27 with 4 bad. A strip below sums the openings to 5, the burn-rate policy's 5 pages, 1.2 a week.">
+        <style>
+          .b4bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b4bW { font: 800 10px Inter, sans-serif; fill: #fff; }
+          .b4bS { font: 700 9px Inter, sans-serif; fill: #56637A; }
+          .b4bL { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b4bM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b4bK { font: 800 10px Inter, sans-serif; fill: #0B1220; }
+          .b4bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+        <defs>
+          <marker id="b4bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <text class="b4bH" x="14" y="24">The session 3 policy pages five times a month. The newest bad row chooses which of five runbooks opens.</text>
+
+        <rect x="14" y="44" width="164" height="44" rx="8" fill="#0F172A"></rect>
+        <text class="b4bW" x="96" y="70" text-anchor="middle">orders.burn.late-landing</text>
+        <text class="b4bM" x="96" y="106" text-anchor="middle">landed after the deadline,</text>
+        <text class="b4bM" x="96" y="120" text-anchor="middle">reconciled, all shards</text>
+        <line x1="96" y1="128" x2="96" y2="146" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b4bAr)"></line>
+        <rect x="14" y="150" width="164" height="44" rx="8" fill="#CBD5E1"></rect>
+        <text class="b4bS" x="96" y="165" text-anchor="middle">RUNBOOK</text>
+        <text class="b4bL" x="96" y="184" text-anchor="middle">Late load</text>
+        <text class="b4bM" x="96" y="216" text-anchor="middle">night 4 · 3 bad</text>
+        <rect x="89" y="228" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b4bK" x="96" y="239" text-anchor="middle">1</text>
+        <text class="b4bM" x="96" y="258" text-anchor="middle">opened once</text>
+
+        <rect x="186" y="44" width="164" height="44" rx="8" fill="#1E293B"></rect>
+        <text class="b4bW" x="268" y="70" text-anchor="middle">orders.burn.source-down</text>
+        <text class="b4bM" x="268" y="106" text-anchor="middle">not landed, and the</text>
+        <text class="b4bM" x="268" y="120" text-anchor="middle">source probe is silent</text>
+        <line x1="268" y1="128" x2="268" y2="146" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b4bAr)"></line>
+        <rect x="186" y="150" width="164" height="44" rx="8" fill="#CBD5E1"></rect>
+        <text class="b4bS" x="268" y="165" text-anchor="middle">RUNBOOK</text>
+        <text class="b4bL" x="268" y="184" text-anchor="middle">Upstream outage</text>
+        <text class="b4bM" x="268" y="216" text-anchor="middle">night 9 · 14 bad</text>
+        <rect x="261" y="228" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b4bK" x="268" y="239" text-anchor="middle">1</text>
+        <text class="b4bM" x="268" y="258" text-anchor="middle">opened once</text>
+
+        <rect x="358" y="44" width="164" height="44" rx="8" fill="#0F172A"></rect>
+        <text class="b4bW" x="440" y="70" text-anchor="middle">orders.burn.unreconciled</text>
+        <text class="b4bM" x="440" y="106" text-anchor="middle">landed on time,</text>
+        <text class="b4bM" x="440" y="120" text-anchor="middle">reconciled = false</text>
+        <line x1="440" y1="128" x2="440" y2="146" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b4bAr)"></line>
+        <rect x="358" y="150" width="164" height="44" rx="8" fill="#CBD5E1"></rect>
+        <text class="b4bS" x="440" y="165" text-anchor="middle">RUNBOOK</text>
+        <text class="b4bL" x="440" y="184" text-anchor="middle">Corrupt batch</text>
+        <text class="b4bM" x="440" y="216" text-anchor="middle">night 15 · 6 bad</text>
+        <rect x="433" y="228" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b4bK" x="440" y="239" text-anchor="middle">1</text>
+        <text class="b4bM" x="440" y="258" text-anchor="middle">opened once</text>
+
+        <rect x="530" y="44" width="164" height="44" rx="8" fill="#1E293B"></rect>
+        <text class="b4bW" x="612" y="70" text-anchor="middle">orders.burn.connector</text>
+        <text class="b4bM" x="612" y="106" text-anchor="middle">not landed, and the</text>
+        <text class="b4bM" x="612" y="120" text-anchor="middle">source probe answers</text>
+        <line x1="612" y1="128" x2="612" y2="146" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b4bAr)"></line>
+        <rect x="530" y="150" width="164" height="44" rx="8" fill="#CBD5E1"></rect>
+        <text class="b4bS" x="612" y="165" text-anchor="middle">RUNBOOK</text>
+        <text class="b4bL" x="612" y="184" text-anchor="middle">Flapping connector</text>
+        <text class="b4bM" x="612" y="216" text-anchor="middle">night 21 · 8 bad</text>
+        <rect x="605" y="228" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b4bK" x="612" y="239" text-anchor="middle">1</text>
+        <text class="b4bM" x="612" y="258" text-anchor="middle">opened once</text>
+
+        <rect x="702" y="44" width="164" height="44" rx="8" fill="#0F172A"></rect>
+        <text class="b4bW" x="784" y="70" text-anchor="middle">orders.burn.short-shards</text>
+        <text class="b4bM" x="784" y="106" text-anchor="middle">landed, shard_count</text>
+        <text class="b4bM" x="784" y="120" text-anchor="middle">below 3</text>
+        <line x1="784" y1="128" x2="784" y2="146" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b4bAr)"></line>
+        <rect x="702" y="150" width="164" height="44" rx="8" fill="#CBD5E1"></rect>
+        <text class="b4bS" x="784" y="165" text-anchor="middle">RUNBOOK</text>
+        <text class="b4bL" x="784" y="184" text-anchor="middle">Partial load</text>
+        <text class="b4bM" x="784" y="216" text-anchor="middle">night 27 · 4 bad</text>
+        <rect x="777" y="228" width="14" height="14" rx="2" fill="#F59E0B"></rect>
+        <text class="b4bK" x="784" y="239" text-anchor="middle">1</text>
+        <text class="b4bM" x="784" y="258" text-anchor="middle">opened once</text>
+
+        <rect x="14" y="278" width="852" height="46" rx="8" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b4bH" x="26" y="297">Openings this month: 1 + 1 + 1 + 1 + 1 = 5, which is the burn-rate policy's 5 pages, 1.2 a week.</text>
+        <text class="b4bM" x="26" y="314">Under threshold paging the same five runbooks would have been opened 35 times, fourteen of them on night 9 alone.</text>
+
+        <rect x="14" y="348" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b4bN" x="38" y="360">A runbook opened once a month is never kept true by use. The quarterly drill is what keeps it true.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - five alerts bound to five runbooks, one per incident type, each opened about once a month.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>One alert, one runbook, bound by name<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The burn-rate policy from session 3 is one query, and it decides <em>whether</em> to page. It does not decide <em>which runbook</em>. That comes from the newest bad row in the partition log and one probe of the source: did the partition land at all, was it late, was it reconciled, did all three shards arrive, and is the source answering. Those fields sort every incident Harborlight has had into one of five shapes, and each shape is an alert with a name.</p>
+        <ul>
+          <li><strong>The alert definition names the runbook.</strong> <code class="mono">orders.burn.source-down</code> names <code class="mono">runbooks/orders/upstream-outage.md</code> and nothing else. One alert, one runbook. An alert that could mean two runbooks is a decision left for the reader, above the line.</li>
+          <li><strong>The page carries the link.</strong> The on-call taps the page and the runbook opens. Nobody searches a wiki at 03:00; a runbook that has to be found is a runbook that is not opened.</li>
+          <li><strong>The window that fired is not the qualifier.</strong> Which window crossed its line says how fast the budget is burning, not what broke. Night 9 and night 21 both paged on the fast window at their first bad hour; the log row is what tells them apart, so the log row picks the name.</li>
+        </ul>
+        <div class="prompt-box good">
+          <span class="label">★ The binding, as the alert definition carries it</span>
+# alerts/orders.yaml
+- alert: orders.burn.source-down
+  policy: orders-burn-rate                     # session 3: 2 h at 14.4x or 12 h at 3x, rising edge, 12 h suppression
+  qualifier: newest bad partition has landed_at null and the source probe has not answered
+  runbook: runbooks/orders/upstream-outage.md   # exactly one
+  owner: data-platform-oncall
+  last_drilled: 2026-08-14
+  drill_minutes: 11
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Staleness: a runbook nobody has run describes a different pipeline<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Pipelines change every week. Runbooks change when somebody remembers. Six months after it was written, a runbook's confirming query references a column that was renamed, its hold command points at a report that moved, and its named person left in March. Nobody notices, because with five pages a month across five runbooks each one is opened roughly once a month, and the person opening it at 03:00 is the least equipped person in the company to spot that the page is out of date.</p>
+        <p>The fix is to run it when nothing is wrong. A <strong>drill</strong> takes a past night from the partition log, pins the clock to an hour inside the incident, and walks the runbook top to bottom exactly as the on-call would, timing it. The confirming query either returns the printed expected output or it does not. The hold command either works against a staging copy of the report or it does not. The named person either answers or has left. Quarterly is the cadence that catches a rename before a real page does, and the date and minutes go at the top of the page, so the next reader knows how fresh the page is before they trust it.</p>
+        <div class="callout tip">
+          <p><strong>A drill that takes longer than the last one is a finding.</strong> Night 9's runbook walked in 11 minutes in August. If it walks in 19 minutes in November, either the runbook grew or the pipeline moved, and either way the page is no longer the shortest path.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Safe state is a section, and a pre-agreed decision per report<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Safe" means something different for every downstream reader, and the on-call is the wrong person to decide which. A settlement report that is signed and paid against must never show a stale total, so its safe state is <strong>hold with a banner</strong>. An operations dashboard that people glance at is better stale than blank, so its safe state is <strong>serve stale with a banner</strong> saying how old the numbers are. A demand forecast retrained nightly can wait a day, so its safe state is <strong>backfill later</strong>, with no banner and a ticket.</p>
+        <table class="clean">
+          <thead><tr><th>Downstream report</th><th>Pre-agreed safe state</th><th>Agreed with</th><th>The one command</th></tr></thead>
+          <tbody>
+            <tr><td>Settlement report</td><td><strong>Hold</strong>, banner on the report page, nothing served</td><td>Finance, the duty lead who signs it</td><td><code class="mono">harbor report hold settlement --banner "..."</code></td></tr>
+            <tr><td>Operations dashboard</td><td><strong>Serve stale</strong>, banner with the age of the data</td><td>Operations lead</td><td><code class="mono">harbor dash stale ops --since {first_missing}</code></td></tr>
+            <tr><td>Demand forecast</td><td><strong>Backfill later</strong>, no banner, ticket to planning</td><td>Planning</td><td><code class="mono">harbor ticket open planning --template backfill</code></td></tr>
+          </tbody>
+        </table>
+        <p>Those three rows were decided in a meeting with the people who read each report, in daylight, once. The runbook's safe-state section is one row of that table copied in, with its command. The on-call runs the command. They do not revisit the meeting.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Five pages, five runbooks, each opened about once<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>The month's shape sets the runbook's shape.</strong> Under burn-rate alerting Harborlight's month is 5 pages, one per incident, 1.2 a week. Five runbooks cover it completely, and each is opened about once. That is why they are short: a document read once a month is read by somebody who has forgotten it.</li>
+          <li><strong>Threshold paging would have opened them 35 times.</strong> Fourteen openings of the outage runbook on night 9 alone, each one after a page saying the same thing. The runbook's design assumes the session 3 policy; under threshold paging the reader would be on step 1 for the fourteenth time at 13:00.</li>
+          <li><strong>Once a month is not enough to keep a page true.</strong> Hence the drill. A runbook that is used daily corrects itself; a runbook used monthly has to be exercised on purpose.</li>
+          <li><strong>Every bad partition weighs the same here, and so does every runbook.</strong> The corrupt-batch runbook protects a signed number and the late-load runbook protects an hour of waiting. A more mature set would order the five by the harm they prevent. Start with five of equal weight and let the incident packages from session 6 tell you which to invest in.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Write the runbook for the upstream outage</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">The upstream outage is the runbook to write first, because it is the one where the temptation to debug is strongest and the right action is a message. Use Harborlight's partition log and night 9's history; if you have your own pipeline and an outage in its past, substitute that night and the shape does not change. The runbook is a text file. Put it where the alert definition can link to it.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Write the page, top to bottom, as text.</strong> Title, the alert it binds to, the three unchanging steps, the confirming query with its expected output printed beneath, the safe-state decision for the settlement report with its one command, the message template, the escalation name and time, and the last-drilled line. Draw the line as a literal row of dashes.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the confirming query against the partition log.</strong> Partitions with no <code class="mono">landed_at</code> in the last six hours, joined to the source probe and grouped by source, so one row tells the reader both that partitions are missing and that the source is silent. Run it with the clock pinned to night 9 at 03:00 and paste the real output under it as the expected output.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the second query for the settlement report's risk.</strong> One lookup against the sign-off table for the day the missing partitions belong to. The rule is printed with it: no row or no signature means the report is at risk.</p>
+      </div>
+      <div class="step">
+        <p><strong>Bind the runbook to the alert by name.</strong> In the alert definition, <code class="mono">orders.burn.source-down</code> names this file and no other. Check that the page the alert emits carries the link; open it from a phone.</p>
+      </div>
+      <div class="step">
+        <p><strong>Drill it against night 9 and time the walk-through.</strong> Pin the clock to night 9 at 03:00, hand the page to somebody who did not write it, and start a timer. They run Q1 and compare, run Q2 and read the rule, name the person, run the hold command against the staging report, fill the template's three blanks. Stop the timer when the message is ready to send. Harborlight's drill: 11 minutes.</p>
+      </div>
+      <div class="step">
+        <p><strong>Record the drill date and minutes at the top of the page and in the alert definition.</strong> Both, so the page and the binding agree. Put the next drill in the calendar for one quarter out.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 1 · the runbook, as the file the alert links to</span>
+RUNBOOK · orders / upstream outage                          v4 · last drilled 2026-08-14 · 11 min
+binds to alert   orders.burn.source-down   (one alert, one runbook; the page carries this link)
+reader           whoever is on call, on a phone, who may never have seen this pipeline
+====================================================================================
+NO DECISIONS ABOVE THIS LINE · steps 1 to 3 are the same on every orders runbook
+
+1  CONFIRM THE PAGE IS REAL
+   Run Q1 below. Expected: one row, source orders-api, last_answered at or before
+   first_missing, missing_partitions 1 or more.
+   Anything else: this is not an outage. Open runbooks/orders/late-load.md instead.
+
+2  IS THE SETTLEMENT REPORT AT RISK
+   Run Q2 below. Expected: no row, or signed_at empty  =  yes, at risk. Continue to 3 and 4.
+   signed_at present  =  already signed. Still do 3, then stop; the backfill runbook owns the rest.
+
+3  TELL ONE NAMED PERSON
+   Dana Whitlock, settlement duty lead (rota week 33). Number on the rota page linked here.
+   Say: "orders source outage, partitions missing from {first_missing}, report going on hold."
+   Do this before anything below. Do not diagnose first.
+------------------------------------------------------------------------------------
+4  SAFE STATE · pre-agreed for the settlement report: HOLD. Never serve it stale.
+   harbor report hold settlement --banner "orders source outage - partitions from {first_missing} missing"
+   Expected: "settlement: held, banner set". Open the report URL; the banner is showing.
+
+5  SEND THE TEMPLATE MESSAGE
+   To #settlement-ops and the duty lead. Template below, three blanks. Fill, send, note the time.
+
+6  RECHECK EVERY 30 MINUTES
+   Rerun Q1. When last_answered is newer than the last missing hour, the source is back:
+   post "source answering since {time}" and open runbooks/orders/backfill.md.
+   Do not backfill from this page.
+
+ESCALATE   05:30 and the source is still silent: call Idris Amara, head of data platform.
+           The report deadline is 07:00 and the hold decision becomes theirs.
+
+NOT ON THIS PAGE   why the source fails, the connector's history, what to change.
+                   Those belong to the incident package, written tomorrow.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 2 · Q1, the confirming query, with the expected output printed under it</span>
+-- Q1 · missing partitions in the last 6 hours, and whether the source answered
+with missing as (
+  select partition_hour
+  from ops.orders_partition_log
+  where partition_hour &gt;= dateadd('hour', -6, current_timestamp)
+    and landed_at is null
+),
+probes as (
+  select source,
+         count(*)                                              as probes,
+         count_if(reachable)                                   as answered,
+         max(case when reachable then probed_at end)           as last_answered
+  from ops.source_probe
+  where probed_at &gt;= dateadd('hour', -6, current_timestamp)
+  group by source
+)
+select p.source, p.probes, p.answered, p.last_answered,
+       (select count(*)            from missing) as missing_partitions,
+       (select min(partition_hour) from missing) as first_missing
+from probes p;
+-- expected on this page: one row, source orders-api, last_answered at or before first_missing, missing_partitions &gt;= 1
+-- night 9 at 03:00: orders-api · probes 6 · answered 2 · last_answered night 8 23:00 · missing_partitions 3 · first_missing night 9 00:00
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 3 · Q2, is the settlement report at risk</span>
+-- Q2 · has the report for the day of the missing partitions been signed
+select report_day, signed_at, signed_by
+from fin.settlement_signoffs
+where report_day = date(:first_missing);
+-- rule: no row, or signed_at empty  =  at risk. A signed_at  =  already signed; the backfill runbook owns what happens next.
+-- night 9 at 03:00: no row. At risk. Go to step 3, then step 4.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 1, continued · the message template</span>
+Subject: orders source outage · settlement report on hold
+
+Since {first_missing} the orders partitions have not landed. The orders API has not
+answered a probe since {last_answered}.
+
+The settlement report is held with a banner. No stale total will be served.
+
+Nothing on the Harborlight side can shorten this. Next update at {now plus 60 minutes},
+or sooner if the source answers.
+
+On call: {your name}. Runbook: orders / upstream outage.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 6 · the drill record</span>
+insert into ops.runbook_drills (runbook, drilled_on, against_night, pinned_clock, walked_by, minutes, findings)
+values ('orders/upstream-outage', date '2026-08-14', 9, 'night 9 03:00', 'rota engineer, not the author', 11,
+        'Q1 expected output pasted from real history; hold command tested on staging; rota name refreshed');
+-- and the same date and minutes at the top of the page and in alerts/orders.yaml, so the three agree
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Pin the clock, do not edit history.</strong> The drill replaces <code class="mono">current_timestamp</code> in Q1 and Q2 with night 9 at 03:00 and runs against the real partition log. Nothing in the log changes, and the expected output printed on the page is real output, not a guess about what the query would return.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 5</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Write the other four runbooks for your pipeline, one per alert name, each opening with the same three steps word for word. If two of them turn out identical below the line, you have four incident types, not five, and the alert definitions should say so.</li>
+      <li>Hold the safe-state meeting. Sit with the person who reads each downstream report and fill in the three-column table: hold, serve stale, or backfill later, with the one command. Copy each row into its runbook.</li>
+      <li>Drill one runbook you did not write, against a real past night, with a timer. Record the date and minutes at the top of the page. Note every line where you hesitated; each one is a decision that has crept above the line.</li>
+      <li>Find the most recent runbook in your team that nobody has opened in six months and run its confirming query. Write down what happened.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">A page fires at 02:40. The on-call opens the runbook and its first step reads "check whether the source looks healthy and, if so, restart the connector". What is wrong with that step?</p>
+      <button class="qopt" type="button">A · Nothing, as long as the connector restart is documented</button>
+      <button class="qopt" type="button">B · It asks for a judgement before the three unchanging steps: the reader should first confirm the page with one query and its printed expected output, decide the report's risk by one rule, and tell one named person</button>
+      <button class="qopt" type="button">C · Restarting the connector should be step 2, after checking the dashboard</button>
+      <p class="qwhy">"Looks healthy" is a decision handed to a tired stranger. Above the line every step is a lookup or a comparison, and the person who reads the report is told before anything is tried.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">On night 9 the source API was down for fourteen hours and nothing on Harborlight's side could bring it back. What should the outage runbook's step 4 be?</p>
+      <button class="qopt" type="button">A · A debugging tree: restart the connector, then rotate credentials, then check the network</button>
+      <button class="qopt" type="button">B · A link to the architecture diagram so the on-call can understand the dependency</button>
+      <button class="qopt" type="button">C · The hold command for the settlement report and a template message to the settlement team, since the runbook's job that night was communication</button>
+      <p class="qwhy">Every branch of a debugging tree produces the same nothing against a dead source. The settlement team's complaint about night 9 was not that the data was late; it was that nobody told them until five.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Under the burn-rate policy Harborlight's five runbooks are each opened about once a month. Why does that make a quarterly drill necessary rather than optional?</p>
+      <button class="qopt" type="button">A · A page used once a month is never corrected by use, so a rename or a departed colleague goes unnoticed until a real page finds it at 03:00; the drill exercises it on purpose against a past night</button>
+      <button class="qopt" type="button">B · Because auditors require quarterly evidence that runbooks exist</button>
+      <button class="qopt" type="button">C · Because the burn-rate windows need re-tuning every quarter</button>
+      <p class="qwhy">A runbook used daily keeps itself true. Five pages a month over five runbooks is one opening each, by the least equipped reader, so staleness has to be caught in daylight.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Runbooks as professional norm - structure, the first three steps, what not to include</span>
+        <span class="note">Established practice, taught to working depth: the one job, the line above which nothing needs a decision, the in-and-out table, and the safe state as a pre-agreed section per report.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Binding to the multi-window burn-rate policy from session 3</span>
+        <span class="note">One alert, one runbook, by name. The bench's 5 pages a month, one per incident, is what makes five runbooks cover the month and each be opened about once.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Drills against real history</span>
+        <span class="note">The clock pinned inside a past incident, the walk-through timed, the date and minutes recorded at the top of the page and in the alert definition.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">The backfill the runbook hands off to</span>
+        <span class="note">Session 5. Tonight's runbook ends at "the source is answering again" and opens the backfill runbook by name.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">The incident package, and why the history stays off the runbook</span>
+        <span class="note">Session 6. History, architecture and opinions live in the document whose reader is awake.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">How a bad partition gets noticed</span>
+        <span class="note">The data observability course owns detection. Here the page has already fired and only has to be confirmed.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. That is the AI observability course; this track is tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 4 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>One job</b><span>From a page to a safe state, by a stranger, with no judgement call. Fixing is optional.</span></div>
+      <div class="cheat-item"><b>Three steps, always the same</b><span>Confirm with one query. Decide the report's risk by one rule. Tell one named person.</span></div>
+      <div class="cheat-item"><b>The line</b><span>Above it, lookups and comparisons only. Below it, exactness: the query, its output, the command, the words.</span></div>
+      <div class="cheat-item"><b>Off the page</b><span>History, architecture, opinions, debugging trees. They live where the reader is awake.</span></div>
+      <div class="cheat-item"><b>Night 9's step 4 is a message</b><span>Nothing on this side could fix a dead source. The template with three blanks is the fix.</span></div>
+      <div class="cheat-item"><b>One alert, one runbook, by name</b><span>The log row picks the alert; the alert names the file; the page carries the link.</span></div>
+      <div class="cheat-item"><b>Safe state is pre-agreed</b><span>Hold, serve stale, or backfill later. Per report, decided in daylight with its reader.</span></div>
+      <div class="cheat-item"><b>Drill quarterly</b><span>5 pages a month, 5 runbooks, each opened once. Pin the clock, time the walk, record the date.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 4 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b3-burn-rate-alerts.html">← Builder session 3 · Burn-rate alerts</a>
+      <a href="b5-backfills.html">Builder session 5 · Backfills without breaking downstream →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Leader session 1 of 6. SLI, SLO and SLA as the service-reliability literature defines them, why 100 percent is the wrong promise, and the number Harborlight's team did not know about its own orders pipeline: 95.14 percent, not the 99 everybody believed.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="A promise with a number - learn data reliability with phoebe">
+<meta property="og:description" content="Leader session 1 of 6. Three words, one with consequences, and the gap between believed 99 and measured 95.14.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/a1-promise-with-a-number.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="A promise with a number - learn data reliability with phoebe">
+<meta name="twitter:description" content="Reliable is a word. 95.14 is a number. Only one of them can be argued with.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Leader session 1 · A promise with a number - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Leader session 1 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Leader session 1 of 6</div>
+    <h1>A promise <span class="accent">with a number</span></h1>
+    <p class="sub">"Reliable" is a word, and every argument about data that runs in circles runs on that word. Tonight replaces it with a number. Three terms from the service-reliability literature, one of which carries consequences; the reason 100 percent is the wrong thing to promise; and the orders pipeline at Harborlight, which its team believed was "basically 99 percent" and which, counted partition by partition over thirty nights, delivered 95.14. Everything a data leader does about reliability starts with that gap, and with being the person who says it out loud.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Foundational</span>
+      <span class="chip audience">Data and analytics leaders</span>
+      <span class="chip audience">Anyone who has said the data is reliable</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · SLI, SLO, SLA and why 100 percent is wrong</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: your first honest number</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>How the leader track works</h2>
+    </div>
+    <p class="lede">Six sessions, 45 minutes each, one running example. The pipeline is <strong>orders</strong> at Harborlight, a marketplace whose hourly partitions, 24 a night and 720 a month, feed a settlement report that somebody has to sign before sellers are paid. Tonight is the vocabulary and the honest number. Session 2 turns the number into an error budget and the budget into decisions. Session 3 treats on-call as something you design rather than a rota you fill. Session 4 is postmortems that change something, session 5 is backfills and debt as reliability work, and session 6 is how the whole thing is reported upward in three numbers. The builder track runs alongside and writes the measurements; the leader track decides what to promise on top of them.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Three words you can define from memory and the one that has a bill attached. A reason, quotable in a steering meeting, why nobody should promise 100 percent. And for one pipeline you are responsible for, two numbers written side by side: what the team believes its reliability is, and what the history says it was.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why the argument never ends while the word is "reliable"<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two people can both say the orders data is reliable and both be telling the truth about different things. The platform lead means the job ran every night and exited cleanly. The settlement lead means the report she signs at nine was right. The finance analyst means the totals matched the bank. None of those is a number, so none of them can be wrong, so the meeting ends where it started.</p>
+        <p>A number changes the shape of the conversation. Once the pipeline is "95.14 percent of hourly partitions good over the last thirty nights", the platform lead can dispute the counting, the settlement lead can say whether 95 is enough for her, and the analyst can ask which 35 partitions were bad. Those are three productive arguments, and none of them was available while the word was "reliable".</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>At Harborlight the two leads had been in the same weekly meeting for a year, each reassuring the other. The platform lead's evidence was the orchestrator's dashboard: 27 of 30 runs green. The settlement lead's evidence was that she had only been late twice. Both were right. The pipeline had landed 685 good partitions out of 720, and the two of them were describing the same 35 bad ones from opposite ends.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The Harborlight cast, and what each of them means by reliable<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>The settlement lead</strong> reads the report at nine, signs it, and sellers are paid against it. Reliable means: every hour of yesterday is in it and the totals reconcile. She is the reader, and the reader's sentence is the one every number has to answer to.</li>
+          <li><strong>The platform lead</strong> owns the pipeline. Reliable means: the nightly job ran and exited cleanly. This is a fact about the job, not about the report, and the two came apart ten times last month without anyone noticing.</li>
+          <li><strong>The on-call engineer</strong> carries the pager. Reliable means: nothing woke me that I could not fix. Sessions 3 and 4 are about this person.</li>
+          <li><strong>The finance analyst</strong> reconciles the report against the bank. Reliable means: the numbers matched. She is the one who noticed night 15, when every partition landed on time with a currency column that had arrived as text.</li>
+          <li><strong>You</strong> are the person who has to say a number to all four of them and have it mean the same thing in every direction. That is the job tonight gives you the words for.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers SLI, SLO and SLA as the SRE book defines them</span>
+      <h2>Three words, and the one that has consequences</h2>
+      <span class="tag concept">10 min live</span>
+    </div>
+    <p class="lede">The service-reliability literature settled this vocabulary a decade ago and the data world has been slow to borrow it. Three terms, in a strict order: the <strong>indicator</strong> is what you measure, the <strong>objective</strong> is the target you set on the measurement, and the <strong>agreement</strong> is the contract that attaches consequences to missing it. The first two are internal to the team. Only the third reaches outside it, which is why it is the last one you write and the one most people write first.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three boxes in a row joined by arrows. SLI, the measurement, defined as a carefully defined quantitative measure of some aspect of the level of service provided. SLO, the target, defined as a target value or range of values for a service level measured by an SLI. SLA, the contract, defined as an explicit or implicit contract with users that includes consequences of meeting or missing the SLOs it contains, marked as the only one with consequences.">
+        <style>
+          .a1aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a1aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a1aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a1aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a1aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a1aR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <defs>
+          <marker id="a1aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <rect x="14" y="24" width="250" height="36" rx="8" fill="#0F172A"></rect>
+        <text class="a1aT" x="139" y="47" text-anchor="middle">SLI · the measurement</text>
+        <rect x="14" y="66" width="250" height="176" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a1aB" x="26" y="90">a carefully defined quantitative</text>
+        <text class="a1aB" x="26" y="106">measure of some aspect of the</text>
+        <text class="a1aB" x="26" y="122">level of service provided</text>
+        <text class="a1aM" x="26" y="156">Harborlight: proportion of hourly</text>
+        <text class="a1aM" x="26" y="172">partitions that were good</text>
+        <text class="a1aN" x="26" y="210">685 of 720 · 95.14 percent</text>
+        <text class="a1aM" x="26" y="228">internal, nobody signs it</text>
+
+        <line x1="268" y1="42" x2="294" y2="42" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a1aAr)"></line>
+
+        <rect x="300" y="24" width="250" height="36" rx="8" fill="#1E293B"></rect>
+        <text class="a1aT" x="425" y="47" text-anchor="middle">SLO · the target</text>
+        <rect x="300" y="66" width="250" height="176" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a1aB" x="312" y="90">a target value or range of values</text>
+        <text class="a1aB" x="312" y="106">for a service level that is</text>
+        <text class="a1aB" x="312" y="122">measured by an SLI</text>
+        <text class="a1aM" x="312" y="156">Harborlight: none written down;</text>
+        <text class="a1aM" x="312" y="172">"basically 99" is a belief</text>
+        <text class="a1aN" x="312" y="210">a number the room can argue with</text>
+        <text class="a1aM" x="312" y="228">internal, the team owns it</text>
+
+        <line x1="554" y1="42" x2="580" y2="42" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#a1aAr)"></line>
+
+        <rect x="586" y="24" width="280" height="36" rx="8" fill="#0F172A"></rect>
+        <text class="a1aT" x="726" y="47" text-anchor="middle">SLA · the contract</text>
+        <rect x="586" y="66" width="280" height="176" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a1aB" x="598" y="90">an explicit or implicit contract</text>
+        <text class="a1aB" x="598" y="106">with your users that includes</text>
+        <text class="a1aB" x="598" y="122">consequences of meeting or</text>
+        <text class="a1aB" x="598" y="138">missing the SLOs it contains</text>
+        <text class="a1aM" x="598" y="172">no explicit consequence: you are</text>
+        <text class="a1aM" x="598" y="188">almost certainly looking at an SLO</text>
+        <rect x="598" y="200" width="118" height="20" rx="5" fill="#F59E0B"></rect>
+        <text class="a1aH" x="657" y="214" text-anchor="middle">consequences</text>
+        <text class="a1aR" x="598" y="236">the only one with a bill attached</text>
+
+        <rect x="14" y="268" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a1aN" x="38" y="280">The first two are internal. Only the SLA reaches outside the team, which is why it is the last one you write.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - indicator, objective, agreement, in the order they have to be written.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>SLI: a carefully defined measure, and "carefully" is the whole word<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The SRE book defines a service level indicator as "a carefully defined quantitative measure of some aspect of the level of service that is provided". For a data pipeline the indicator is a ratio: good events over total events, in a window. The care goes into deciding what one event is and what makes it bad, because every number downstream is arithmetic on that decision.</p>
+        <p>Harborlight's event is one hourly partition of orders, and a partition is good when it landed within its hour, its totals reconcile, and all of it arrived. That gives 720 events a month, which is enough resolution to see a night that landed 23 of 24 partitions as a partial failure rather than a success. Counting nightly runs instead gives 30 events, and a run that landed 23 of 24 looks exactly like one that landed all of them.</p>
+        <div class="callout tip">
+          <p><strong>You do not need to write the measurement yourself.</strong> You need to be able to ask three questions of whoever does: what is one event, what makes it bad, and over what window. If any of the three gets a vague answer, the number you are about to be given is not yet an indicator.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>SLO: a target on the measurement, which Harborlight did not have<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A service level objective is "a target value or range of values for a service level that is measured by an SLI". It is a sentence of the form: this proportion of partitions will be good over this window. It is internal; the team sets it and the team owns it. It is also the thing most teams believe they have and do not.</p>
+        <p>Harborlight had no objective written anywhere. What it had was a shared belief, "basically 99 percent", which had never been a target because nobody had ever chosen it, and had never been checked because there was no measurement to check it against. A belief cannot be missed. An objective can, and that is its entire value.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>SLA: the one with consequences, and the test for whether you have one<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A service level agreement is "an explicit or implicit contract with your users that includes consequences of meeting (or missing) the SLOs they contain". The word that matters is consequences. The SRE book gives the test directly: "if there is no explicit consequence, then you are almost certainly looking at an SLO". Money, a credit, a penalty clause, a commitment that costs something to break. No consequence, no agreement.</p>
+        <p>Harborlight's settlement report has a real one. Sellers are paid against it on a date they were promised, and a late or wrong report moves that date. Nobody in the data team had ever written that down as the consequence of the orders pipeline missing its hours, which is how a pipeline delivering 95 percent had been carrying an implicit agreement nobody had costed.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Ask around a data organisation for its SLAs and you will be shown a wiki page of targets: freshness by 08:00, 99 percent availability, dashboards refreshed hourly. Ask what happens when one is missed and the answer is usually an apology. Those are objectives with a grander name, and the difference matters the first time a customer's contract quotes one of them back.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why 100 percent is the wrong target<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The instinct in the room, once there is a number, is to ask for all of it. The SRE book is blunt about this: "it's both unrealistic and undesirable to insist that SLOs will be met 100% of the time". Unrealistic because the pipeline depends on an upstream source, a network and a warehouse, none of which is perfect, and a promise of 100 percent is a promise about all of them. Undesirable because the last fraction of a percent is bought with the engineering time that would otherwise ship the changes the business asked for, and because a reader cannot tell the difference between a report that was right every day and one that was right on all but one.</p>
+        <p>What the literature proposes instead is "an error budget - a rate at which the SLOs can be missed". Set the target at 95 percent and you have said, in advance, that 5 percent of partitions may be bad this month without anyone having broken a promise. That budget is the currency the whole next session is about. Tonight it is enough to know that a promise of less than 100 is not a lowering of standards. It is the first honest statement of what the standard is.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The "basically 99" problem: believed, reported, measured<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Three numbers were in circulation at Harborlight for the same thirty nights, and nobody had put them in one table.</p>
+        <table class="clean">
+          <thead><tr><th>Where the number came from</th><th>What it actually counts</th><th>The number</th></tr></thead>
+          <tbody>
+            <tr><td>The team's belief</td><td>Conversations, and the absence of a complaint that week</td><td>"basically 99 percent"</td></tr>
+            <tr><td>The orchestrator's dashboard</td><td>Nightly runs whose job exited cleanly</td><td>27 of 30 runs green</td></tr>
+            <tr><td>The partition log</td><td>Hourly partitions that were on time, correct and complete for the reader</td><td><strong>685 of 720 · 95.14 percent</strong></td></tr>
+          </tbody>
+        </table>
+        <p>The orchestrator's 27 of 30 is the one that misled, and it misled in a specific direction. On night 15 the job exited cleanly six times while landing a currency column as text: six partitions on time and wrong. On night 27 it exited cleanly four times while landing partitions with one of three shards missing: four partitions on time and incomplete. Ten bad partitions the success flag counted as good, because a success flag measures whether the job finished, not whether the reader got what she needed. Those ten are most of the distance between the belief and the measurement.</p>
+      </div>
+    </details>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 264" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two horizontal bars on an axis running from 90 to 100 percent. The upper bar, believed basically 99 percent, reaches 99. The lower bar, measured 95.14 percent, 685 of 720, stops at 95.14 with a red segment for the 35 bad partitions. Between the bars, ten small amber squares mark the partitions the success flag counted as good, six corrupt and four partial.">
+        <style>
+          .a1bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a1bW { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a1bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a1bM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .a1bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a1bR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+        </style>
+
+        <text class="a1bH" x="14" y="28">Two numbers for the same thirty nights</text>
+
+        <text class="a1bN" x="14" y="93">believed</text>
+        <rect x="200" y="70" width="540" height="36" rx="4" fill="#94A3B8"></rect>
+        <text class="a1bH" x="212" y="93">"basically 99 percent"</text>
+        <text class="a1bM" x="212" y="118">from conversations and a green dashboard</text>
+
+        <rect x="508" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="516" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="524" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="532" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="540" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="548" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="556" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="564" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="572" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <rect x="580" y="124" width="7" height="7" rx="1" fill="#F59E0B"></rect>
+        <text class="a1bB" x="600" y="126">10 partitions the success flag</text>
+        <text class="a1bB" x="600" y="139">counted as good: 6 corrupt, 4 partial</text>
+
+        <text class="a1bN" x="14" y="163">measured</text>
+        <rect x="200" y="140" width="308" height="36" rx="4" fill="#1E293B"></rect>
+        <text class="a1bW" x="212" y="163">95.14 percent · 685 of 720</text>
+        <rect x="508" y="140" width="292" height="36" rx="4" fill="#991B1B"></rect>
+        <text class="a1bR" x="520" y="192">35 bad partitions in five incidents</text>
+
+        <line x1="200" y1="206" x2="800" y2="206" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="200" y1="202" x2="200" y2="210" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="500" y1="202" x2="500" y2="210" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="740" y1="202" x2="740" y2="210" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <line x1="800" y1="202" x2="800" y2="210" stroke="#C4CDD9" stroke-width="1.5"></line>
+        <text class="a1bM" x="200" y="224" text-anchor="middle">90</text>
+        <text class="a1bM" x="500" y="224" text-anchor="middle">95</text>
+        <text class="a1bM" x="740" y="224" text-anchor="middle">99</text>
+        <text class="a1bM" x="800" y="224" text-anchor="middle">100</text>
+        <text class="a1bM" x="14" y="224">axis runs 90 to 100 percent</text>
+
+        <rect x="14" y="242" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a1bN" x="38" y="254">Believed came from a job that exited cleanly. Measured came from counting what the reader received.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - believed against measured, and the ten partitions that hid between them.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Nines, and what each one costs in partitions<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Reliability targets are spoken in nines. The SRE book frames 99 percent as "2 nines" and 99.999 percent as "5 nines", and describes Google Compute Engine's published 99.95 percent as "three and a half nines". The shorthand is useful because it makes the cost visible: every additional nine allows ten times fewer bad events in the same window.</p>
+        <ul>
+          <li><strong>99 percent over 720 partitions</strong> allows 7.2 bad partitions a month. Harborlight had 35.</li>
+          <li><strong>99.9 percent</strong> allows 0.72, which is less than one partition. A single late hour breaks the month.</li>
+          <li><strong>95 percent</strong> allows 36, and is not a number of nines at all, which is part of why teams are embarrassed to say it and reach for 99 instead. The embarrassment is not a reason. The history is.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers what a numbered promise does to the conversation</span>
+      <h2>What a number changes in the room</h2>
+      <span class="tag concept">7 min live</span>
+    </div>
+    <p class="lede">A number is not a technical artifact. It is a change in who gets to decide. While reliability is a word, the data team decides whether it is good enough, by default and usually by silence. Once it is a number, the person who reads the output can decide, and the data team's job becomes delivering the number they agreed to rather than defending a feeling.</p>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>From "is it reliable" to "is 95 enough for the settlement report"<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Is the data reliable" is a question the data team has to answer, and cannot, because it has no unit. "Is 95.14 percent of hourly partitions good enough for the settlement report" is a question the settlement lead can answer in one meeting, because she knows what a missing hour costs her and the data team does not. The number moves the decision to the person with the information to make it.</p>
+        <p>It also moves the argument. Instead of the platform lead defending the pipeline and the settlement lead defending her frustration, both are looking at 35 bad partitions and asking which of them mattered. Night 9's fourteen missing hours mattered enormously. Night 21's eight scattered hours, each backfilled within the hour, may not have mattered to her at all. That conversation, about which failures the reader can absorb, is the one that sets the target, and it was impossible while the answer was "basically 99".</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's settlement lead, shown the number for the first time, did not ask for 99. She asked for the report to be right or to be told by eight what was missing. That is a specification, not a percentage, and it turned out to be satisfiable at 95 with an honest morning message, and unsatisfiable at 99 with a silent one.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The SLA trap, in both directions<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>An agreement can fail in two ways, and organisations tend to have one of each. The first is an SLA with no consequence: freshness by 08:00 written into a data contract, missed a dozen times a quarter, followed each time by an apology. That is an SLO with a grander name, and calling it an agreement erodes every real agreement in the building. The second is an SLA with a consequence you cannot afford: a penalty clause signed at 99.5 percent by someone who never saw the partition log, on a pipeline that delivers 95. That is a liability with a monthly renewal.</p>
+        <ul>
+          <li><strong>Before signing anything external,</strong> know the measured number for the last ninety days. An agreement is a bet on history.</li>
+          <li><strong>Keep the internal objective tighter than the external agreement.</strong> The gap is the room you need to notice a bad month before it becomes a breached contract.</li>
+          <li><strong>Write the consequence down, even internally.</strong> "Sellers are paid a day late" is a consequence. Once it is written next to the target, nobody argues that reliability is a technical concern.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The cost of promising more than the history supports<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Promising a number above the measured one does not make the pipeline better. It makes the promise break earlier. Replaying Harborlight's actual month against four candidate targets shows exactly when.</p>
+        <table class="clean">
+          <thead><tr><th>Promise</th><th>Bad partitions allowed in 720</th><th>What happened this month</th></tr></thead>
+          <tbody>
+            <tr><td>95 percent</td><td>36</td><td>35 used, 3 percent of the budget left at night 30, promise kept</td></tr>
+            <tr><td>97 percent</td><td>21.6</td><td>Budget exhausted on <strong>night 15</strong>, promise broken for half the month</td></tr>
+            <tr><td>99 percent</td><td>7.2</td><td>Budget exhausted on <strong>night 9</strong>, when the upstream outage landed 14 in one night</td></tr>
+            <tr><td>99.9 percent</td><td>0.72</td><td>Budget exhausted on <strong>night 4</strong>, by the first late load of the month</td></tr>
+          </tbody>
+        </table>
+        <p>The pipeline is identical in all four rows. The only thing that changes is how many nights the team spends in breach of its own word, and how quickly the word stops meaning anything. 99.9 percent is what a typical good night at Harborlight actually delivers, and promising it for every night is a promise the history says will be broken before the first week is out.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Few promises, plainly worded: the target advice the literature gives<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The SRE book's advice on choosing targets is short and every line of it is aimed at a leader rather than an engineer.</p>
+        <ul>
+          <li><strong>Don't pick based on current performance.</strong> A typical good night is not a target; it is a coincidence. The 99.9 percent row above is what happens when a team promises its best day for every day.</li>
+          <li><strong>Keep it simple.</strong> One ratio, one window, one sentence. A target that needs a footnote will be misquoted in the first steering meeting.</li>
+          <li><strong>Avoid absolutes.</strong> "Always", "never" and "100 percent" are not targets. They are the absence of a target dressed as ambition.</li>
+          <li><strong>Have as few SLOs as possible.</strong> Every objective is a promise somebody has to keep and somebody has to check. Three is a contract. Thirty is a dashboard nobody reads.</li>
+          <li><strong>Perfection can wait.</strong> It is "better to start with a loose target that you tighten" than to promise a strict one and quietly stop reporting against it in month two.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Your first honest number</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">No code, one pipeline, one page. Bring a pipeline somebody actually reads: a report, a dashboard, a feed to another team. If you have nothing to hand, use Harborlight's orders pipeline and its thirty nights. The output is two numbers side by side and a sentence from the reader, and that page is what gets brought to session 2.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Pick one pipeline somebody reads.</strong> Not the most important one, the one with the clearest reader. Write down who reads it, when, and what they do with it. If you cannot name the reader, pick a different pipeline; a pipeline nobody reads has no reliability to measure.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write down what the team believes its reliability is, and where the belief comes from.</strong> "About 99 percent, because the job dashboard is mostly green" is a complete and honest answer. So is "no idea". The source of the belief is the more useful half of this step, because it tells you which implementation of the measurement has been standing in for the truth.</p>
+      </div>
+      <div class="step">
+        <p><strong>Ask the reader what "good" means, in one sentence.</strong> Go and ask, tonight if they are in the building. No system names, no percentages. The sentence describes what they need on their screen and by when. Write it down in their words and resist improving it.</p>
+      </div>
+      <div class="step">
+        <p><strong>Get the measured number, or estimate it honestly.</strong> If a partition log or load history exists, ask whoever owns it for good partitions over total partitions for the last thirty days, using the reader's sentence as the definition of good. If nothing exists, count the incidents you remember, estimate the hours each one took away from the reader, and write "estimated" next to the result. An honest estimate beats a precise number that measures the job instead of the reader.</p>
+      </div>
+      <div class="step">
+        <p><strong>Put the two numbers side by side, with their sources.</strong> Believed, and where it came from. Measured, and where it came from. Under them, the reader's sentence. At Harborlight that page read: believed basically 99 from the orchestrator dashboard; measured 95.14, 685 of 720 partitions, from the partition log; "the report I sign at nine is right, or I know by eight what is missing".</p>
+      </div>
+    </div>
+
+    <div class="prompt-box bad">
+      <span class="label">✕ What the reader's sentence usually looks like the first time</span>
+The orders data needs to be reliable and available on time so that settlement can run smoothly.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ What Harborlight's settlement lead actually wrote</span>
+The settlement report I sign at 09:00 contains every hour of yesterday's orders with totals that reconcile to the bank file, or I have been told before 08:00 exactly which hours are missing.
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Do not choose a target tonight.</strong> The two numbers on the page are the only input the next session needs. A target chosen before the measured number is on the page is how a pipeline delivering 95 gets promised at 99, and the whole of session 2 is about not doing that.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 2</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Finish the one-page pair for your pipeline: believed with its source, measured with its source, the reader's sentence. If the measured number is estimated, say so on the page.</li>
+      <li>Ask whoever owns the pipeline for the count of bad events last month and what they were. You will need that list, grouped into incidents, for the budget arithmetic next time.</li>
+      <li>Find every place in your organisation where the word SLA is written down for data. For each, write the consequence of missing it. Count how many have one.</li>
+      <li>Read the reader's sentence back to the reader and note every word they change. The changed words are the specification.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">A data contract says "orders refreshed by 08:00 daily". It has been missed eleven times this quarter and each time the team apologised. What is it?</p>
+      <button class="qopt" type="button">A · An SLA, because it is written in a contract</button>
+      <button class="qopt" type="button">B · An SLI, because it describes a measurement</button>
+      <button class="qopt" type="button">C · An SLO, because there is no explicit consequence for missing it</button>
+      <p class="qwhy">The SRE book's test is the consequence. "If there is no explicit consequence, then you are almost certainly looking at an SLO." An apology is not a consequence; a delayed seller payout is.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Harborlight's orchestrator showed 27 of 30 nightly runs green, and the team believed the pipeline was basically 99 percent. The partition log said 685 of 720, or 95.14. Where did most of the gap come from?</p>
+      <button class="qopt" type="button">A · Ten partitions on nights 15 and 27 that were wrong or incomplete but whose job exited cleanly, so the success flag counted them as good</button>
+      <button class="qopt" type="button">B · Weekend partitions that the orchestrator does not schedule</button>
+      <button class="qopt" type="button">C · Rounding, because 27 of 30 is 90 percent</button>
+      <p class="qwhy">A success flag measures whether the job finished, not whether the reader got what she needed. Six corrupt partitions on night 15 and four partial ones on night 27 all exited zero.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">The steering committee asks for the orders pipeline to be 100 percent reliable. What is the honest response?</p>
+      <button class="qopt" type="button">A · Agree, and add headcount until it is</button>
+      <button class="qopt" type="button">B · Explain that 100 percent is both unrealistic and undesirable, and propose a target with an error budget the history supports</button>
+      <button class="qopt" type="button">C · Agree, and measure it by nightly run so the number looks closer</button>
+      <p class="qwhy">The literature is explicit that insisting on 100 percent is unrealistic and undesirable. The error budget, the rate at which the promise may be missed, is what makes a target honest. Changing the measurement to flatter the number is how the 27-of-30 problem started.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book, Service Level Objectives - the SLI, SLO and SLA definitions</span>
+        <span class="note">Quoted as written, one card each, with the no-consequence test for telling an SLA from an SLO.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">SRE book - why 100 percent is the wrong target, and the error budget</span>
+        <span class="note">"Unrealistic and undesirable", and the budget as a rate at which the promise may be missed. The arithmetic is session 2.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Harborlight: 95.14 against "basically 99"</span>
+        <span class="note">685 of 720 partitions, the 27-of-30 success flag, and the ten partitions it counted as good.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">The indicator menu for data pipelines and how the measurement is written</span>
+        <span class="note">Builder session 1 owns freshness, correctness and coverage. Here a leader only has to ask the three questions of it.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">How a bad partition gets noticed</span>
+        <span class="note">The data observability course owns detection. Here a bad partition only has to be counted.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. The AI observability course owns those; the objects here are tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 1 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>SLI</b><span>A carefully defined quantitative measure. Good events over total events, in a window.</span></div>
+      <div class="cheat-item"><b>SLO</b><span>A target value or range for the indicator. Internal. A belief is not one.</span></div>
+      <div class="cheat-item"><b>SLA</b><span>A contract with consequences. No explicit consequence, and it is an SLO with a grander name.</span></div>
+      <div class="cheat-item"><b>100 percent is wrong</b><span>Unrealistic and undesirable. The error budget is the rate the promise may be missed.</span></div>
+      <div class="cheat-item"><b>The event is the partition</b><span>720 a month at Harborlight. A run that lands 23 of 24 is not a success.</span></div>
+      <div class="cheat-item"><b>The success flag lies</b><span>It measures the job. Ten bad partitions exited cleanly and counted as good.</span></div>
+      <div class="cheat-item"><b>95.14, not 99</b><span>685 of 720. Promise 97 and the budget is gone night 15; 99, night 9; 99.9, night 4.</span></div>
+      <div class="cheat-item"><b>The reader decides</b><span>"Is 95 enough for the settlement report" is a business question the business can answer.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Leader session 1 of 6 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="../index.html">← All sessions</a>
+      <a href="a2-error-budgets.html">Leader session 2 · Error budgets buy decisions →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

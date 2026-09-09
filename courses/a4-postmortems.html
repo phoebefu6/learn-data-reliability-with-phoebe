@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Leader session 4 of 6. Blameless is the entry condition of a postmortem, not its outcome. The three parts that matter: a timeline in budget terms, contributing conditions rather than one root cause, and actions with an owner and a date. What each of Harborlight's five incidents would change, and the gap two of them share that no single postmortem sees.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Postmortems that change something - learn data reliability with phoebe">
+<meta property="og:description" content="Leader session 4 of 6. A postmortem that names a person buys one fewer honest account next time. One that ends in an owner and a date changes the system.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/a4-postmortems.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Postmortems that change something - learn data reliability with phoebe">
+<meta name="twitter:description" content="Night 9 cost 14 partitions, two thirds of a 97 percent budget. The postmortem is the system change, not the story.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Leader session 4 · Postmortems that change something - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Leader session 4 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Leader session 4 of 6</div>
+    <h1>Postmortems that <span class="accent">change something</span></h1>
+    <p class="sub">Most postmortems are a story with a villain and a moral, and the moral is "be more careful". They are read once, filed, and the same incident arrives again in a different month wearing a different name. A postmortem exists for one reason: the system change that makes the same incident impossible or cheaper. Blameless is how you get in the door, because a document that names a person produces one fewer honest account next time. What matters once inside is three things: a timeline in budget terms, the conditions that combined rather than a single root cause, and actions that carry an owner and a date. Harborlight's five incidents each point at one change, and read together they point at a sixth that no single postmortem could see.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Data and analytics leaders</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · Blameless, and then what</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: rewrite one postmortem</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 4 sits in the leader track</h2>
+    </div>
+    <p class="lede">Six sessions, one running example: the <strong>orders</strong> pipeline at Harborlight, 24 hourly partitions a night, 720 a month, feeding the settlement report that pays sellers. Session 1 measured it at 95.14 percent. Session 2 turned the shortfall into an error budget: 21.6 bad partitions a month at a 97 percent target, gone by night 15. Session 3 redesigned the on-call that carried the 35 bad partitions and their 35 pages. Tonight is the morning after each of the five incidents, and what gets written down so that the next month is different. Session 5 takes up the backfills and the debt the incidents leave behind, and session 6 reports the whole month upward in three numbers. The builder track assembles the incident package in its session 6; the leader track decides what a postmortem is allowed to conclude.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The test that separates a postmortem from an incident report: does it end in a change to the system, with a name and a date on it. The three parts that carry all the weight, and the one part that carries none and does damage. For one real postmortem, a rewrite with every personal name struck, the impact stated in budget terms, and every action converted to owner-plus-date or deleted. And the habit of reading the last three together, which is where the shared gap lives.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why a postmortem that names a person produces one fewer honest account next time<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A postmortem depends entirely on people telling you what actually happened: what they saw, what they assumed, which alert they dismissed and why. That information exists in exactly one place, the memory of the person who was there, and they hand it over voluntarily. The moment a document says "the on-call failed to notice", every engineer who reads it learns the price of being noticed. Next time, the account arrives later, shorter, and with the awkward part left out. The document was accurate once and made every future document less so.</p>
+        <p>Blameless is therefore not kindness and not a culture initiative. It is the condition under which the information the postmortem needs continues to arrive. The rule is mechanical: describe what the system did and what the people knew at the time, never what a person should have done. "The alert fired at 02:10 and its title matched the previous six false pages" is blameless and more useful than "the on-call ignored the alert", because it points at a fix. The second sentence points at a person, and people are not a system change.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's night 15 postmortem, first draft, contained the sentence "the on-call did not check the currency column". The on-call had no check to run, no runbook, and a pager that had fired six times for a corrupt batch that looked, from the alert title, like the late load of night 4. The second draft replaced the sentence with the three facts. Two of the three became actions. The first sentence would have become a quieter engineer.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The five incidents, in one table<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Thirty nights, 720 partitions, 35 bad. Every number tonight comes from these five rows, and the budget column assumes the 97 percent target from session 2, which allows 21.6 bad partitions a month.</p>
+        <table class="clean">
+          <thead><tr><th>Night</th><th>Incident</th><th>Bad partitions</th><th>Share of a 97 percent budget</th><th>What the reader saw</th></tr></thead>
+          <tbody>
+            <tr><td>4</td><td>Late load</td><td>3</td><td>about 14 percent</td><td>Three hours missing at nine, backfilled by ten</td></tr>
+            <tr><td>9</td><td>Upstream outage</td><td>14</td><td><strong>about two thirds</strong></td><td>Report unsignable; the outage was on the source's side</td></tr>
+            <tr><td>15</td><td>Corrupt batch</td><td>6</td><td>about 28 percent</td><td>On time and wrong: a currency column arrived as text</td></tr>
+            <tr><td>21</td><td>Flapping connector</td><td>8, scattered</td><td>about 37 percent</td><td>Eight hours each briefly missing, each backfilled within the hour</td></tr>
+            <tr><td>27</td><td>Partial load</td><td>4</td><td>about 19 percent</td><td>On time, one of three shards missing in each</td></tr>
+          </tbody>
+        </table>
+        <p>The shares add to more than one budget because the month spent more than one budget. Night 15 is where 21.6 ran out, and every partition after it was a promise already broken.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers blameless postmortems and actions with owners</span>
+      <h2>Blameless is the entry condition, not the outcome</h2>
+      <span class="tag concept">10 min live</span>
+    </div>
+    <p class="lede">Getting the blame out of the document is where the work starts, not where it finishes. A blameless postmortem that ends in "we will be more careful" has protected the people and changed nothing. The outcome that counts is a change to the system, and three parts of the document carry it: the <strong>timeline in budget terms</strong>, the <strong>contributing conditions</strong>, and the <strong>actions with an owner and a date</strong>. Everything else is narrative, and narrative is what gets read once.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four panels. Three carry the weight: a timeline in budget terms, showing night 9's first bad hour at 02:10 and 14 partitions by 06:00, two thirds of a 97 percent budget of 21.6 in one night; contributing conditions, listing the source stopped publishing, no dependency SLO agreed, nobody paged the source team, and 14 pages of which none was fixable on this side; and actions with owner and date, a communication runbook owned by the on-call lead by the 20th and a dependency SLO with the source owned by the platform lead by the 30th. A fourth panel, who, lists who ran the job, who missed the alert and who approved the change, struck through with a red line.">
+        <style>
+          .a4aT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a4aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a4aB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a4aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a4aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .a4aR { font: 700 11px Inter, sans-serif; fill: #991B1B; }
+          .a4aS { font: 400 11px Inter, sans-serif; fill: #56637A; text-decoration: line-through; }
+        </style>
+
+        <rect x="14" y="20" width="200" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="a4aT" x="114" y="42" text-anchor="middle">Timeline, in budget terms</text>
+        <rect x="14" y="60" width="200" height="200" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4aB" x="26" y="84">02:10 first bad hour, paged</text>
+        <text class="a4aB" x="26" y="100">02:25 source outage confirmed</text>
+        <text class="a4aB" x="26" y="116">06:40 source resumed</text>
+        <text class="a4aB" x="26" y="132">09:30 backfill complete</text>
+        <text class="a4aM" x="26" y="166">cost: 14 partitions</text>
+        <text class="a4aN" x="26" y="184">two thirds of a 97 percent</text>
+        <text class="a4aN" x="26" y="200">budget (21.6), one night</text>
+        <text class="a4aM" x="26" y="234">not "a bad night": a number</text>
+
+        <rect x="230" y="20" width="200" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="a4aT" x="330" y="42" text-anchor="middle">Contributing conditions</text>
+        <rect x="230" y="60" width="200" height="200" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4aB" x="242" y="84">source stopped publishing</text>
+        <text class="a4aB" x="242" y="100">no dependency SLO agreed</text>
+        <text class="a4aB" x="242" y="116">no path to page the source</text>
+        <text class="a4aB" x="242" y="132">settlement told at 08:50</text>
+        <text class="a4aB" x="242" y="148">14 pages, 0 fixable here</text>
+        <text class="a4aM" x="242" y="182">several, not one</text>
+        <text class="a4aM" x="242" y="198">remove any and the night</text>
+        <text class="a4aM" x="242" y="214">is cheaper</text>
+
+        <rect x="446" y="20" width="200" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="a4aH" x="546" y="42" text-anchor="middle">Actions: owner and date</text>
+        <rect x="446" y="60" width="200" height="200" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4aB" x="458" y="84">communication runbook:</text>
+        <text class="a4aB" x="458" y="100">tell settlement by 08:00</text>
+        <text class="a4aN" x="458" y="116">owner: on-call lead, 20th</text>
+        <text class="a4aB" x="458" y="150">dependency SLO with the</text>
+        <text class="a4aB" x="458" y="166">source team, paged once</text>
+        <text class="a4aN" x="458" y="182">owner: platform lead, 30th</text>
+        <text class="a4aM" x="458" y="216">no owner or no date:</text>
+        <text class="a4aM" x="458" y="232">it is a wish, delete it</text>
+
+        <rect x="662" y="20" width="204" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="a4aH" x="764" y="42" text-anchor="middle">Who</text>
+        <rect x="662" y="60" width="204" height="200" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4aS" x="674" y="84">who was on call</text>
+        <text class="a4aS" x="674" y="100">who missed the alert</text>
+        <text class="a4aS" x="674" y="116">who approved the change</text>
+        <text class="a4aS" x="674" y="132">who should have known</text>
+        <line x1="674" y1="72" x2="854" y2="140" stroke="#991B1B" stroke-width="2"></line>
+        <text class="a4aR" x="674" y="182">struck before it is read</text>
+        <text class="a4aM" x="674" y="200">a name is not a system</text>
+        <text class="a4aM" x="674" y="216">change, and it costs the</text>
+        <text class="a4aM" x="674" y="232">next honest account</text>
+
+        <rect x="14" y="290" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a4aN" x="38" y="302">Three panels change the system. The fourth changes only who stays quiet at the next one.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the three parts of a postmortem that carry weight, and the one that is struck before it is read.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What a postmortem is for: the system change, not the narrative<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The test is one question asked of the finished document: what is now different about the pipeline, the alert, the runbook or the contract with the source, such that the same incident either cannot happen or costs less when it does. If the answer is a sentence about the system, the postmortem worked. If the answer is a sentence about people trying harder, the document is an incident report with a moral attached, and the incident will be back.</p>
+        <p>The narrative is not useless; it is how the room reconstructs what happened. But the narrative is the input, not the output, and postmortems fail when the story is so satisfying that the room mistakes having understood the night for having changed the next one.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The timeline, in budget terms<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A timeline is a list of times and facts, and every postmortem has one. What most lack is the line that converts the facts into the currency the leader track has been building since session 2. Night 9 was not "a bad night" or "a major outage". It cost <strong>14 partitions</strong>, which against a 97 percent target and its budget of 21.6 is about <strong>two thirds of the month's allowance in one night</strong>. That one line does three things a narrative cannot.</p>
+        <ul>
+          <li><strong>It ranks the incident without an argument.</strong> Fourteen partitions against three for the late load on night 4. The room does not need to agree about how bad it felt.</li>
+          <li><strong>It tells the reader what was left.</strong> After night 9, about a third of the budget remained for twenty-one more nights. Night 15's six partitions spent it. That is why the settlement lead was told the promise was broken in the middle of the month, not at the end.</li>
+          <li><strong>It sets the size of the action.</strong> An incident that spent two thirds of the budget earns a change with a real owner. An incident that spent a fortieth earns a line in a backlog. The budget decides which, and it decides it before anybody has to defend a feeling.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Contributing conditions, not a single root cause<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Root cause" is a comfortable phrase because it promises there is one thing to fix. There almost never is. Night 9 had a root cause, the source stopped publishing, and it was entirely outside Harborlight's control. A postmortem that stops there concludes "nothing to do", which is false. The night was as expensive as it was because several conditions were true at once: no dependency SLO with the source, so the outage was not the source team's problem until nine; no path to page the source, so the on-call could only wait; a policy that paged fourteen times for a failure nobody on this side could fix; and a settlement lead who learned about it at 08:50 from the report itself.</p>
+        <p>Remove any one of those conditions and the night costs less. That is the test for whether something belongs in the list: not "did it cause the incident" but "if this had been otherwise, would the incident have been cheaper". Four conditions produce four candidate actions. One root cause produced none.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>An action against a wish<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The last section of every postmortem is a list called actions, and most of what is in it is wishes. The difference is structural, not stylistic: an action names a change to the system, a person who owns making it, and a date by which it is done. A wish names a behaviour and hopes.</p>
+        <div class="prompt-box bad">
+          <span class="label">✕ A wish, from Harborlight's night 27 first draft</span>
+Be more careful with shard counts during the load, and double-check partitions before the settlement run.
+        </div>
+        <div class="prompt-box good">
+          <span class="label">★ The same line as an action</span>
+Add a coverage check on shard count to every orders partition; a partition with fewer than three shards is marked bad and pages once. Owner: Devi. Done by the 20th.
+        </div>
+        <p>The good line can be checked on the 21st. Either the check exists or it does not, and if it does not, the conversation is with Devi about what blocked it, which is a useful conversation. The wish cannot be checked on any date by anybody, which is what makes it comfortable to write and worthless to have written.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What to strike, and what to keep, in the first draft<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Strike every personal name in the narrative.</strong> Replace with a role and what that role knew at the time: "the on-call, holding a pager that had fired six times with the same title". Names survive only in the owner column of the actions, where they are a commitment rather than an accusation.</li>
+          <li><strong>Strike "should have".</strong> It is always a person and always hindsight. Rewrite as the condition that made the better choice invisible at the time.</li>
+          <li><strong>Strike "human error" as a cause.</strong> It is a description of the fact that a person was involved. The condition that made the error easy to make is the cause, and it is fixable.</li>
+          <li><strong>Keep every timestamp.</strong> The gap between the first bad hour and the first human awareness is the detection cost; the gap between awareness and the reader being told is the communication cost. Both become actions.</li>
+          <li><strong>Keep what the reader experienced,</strong> in the reader's words. The settlement lead's "I found out from the report" is worth more than any internal metric, and it is the line that justifies the communication runbook.</li>
+          <li><strong>Keep the budget line.</strong> Partitions spent, share of the month's allowance, what remained. It is the sentence that gets quoted upward in session 6.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers what the five incidents teach</span>
+      <h2>What Harborlight's five incidents would each change</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">Five nights, five postmortems, five system changes. Each is small enough to have an owner and a date. Read one at a time they are five separate fixes. Read together, two of them are the same missing indicator, and that finding is the reason postmortems are reviewed as a set rather than filed one by one.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 314" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five tiles, one per incident. Night 4 late load, 3 bad partitions, system change a freshness alert that pages once. Night 9 upstream outage, 14 bad partitions, a communication runbook and a dependency SLO with the source. Night 15 corrupt batch, 6 on time and wrong, a correctness check the settlement team already computes by hand. Night 21 flapping connector, 8 scattered, a slow-window alert plus retry with backoff. Night 27 partial load, 4 with a shard missing, a coverage check on shard count. Nights 21 and 27 are joined by an amber bracket labelled same gap, no coverage indicator.">
+        <style>
+          .a4bT { font: 800 12px Inter, sans-serif; fill: #fff; }
+          .a4bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .a4bB { font: 400 11px Inter, sans-serif; fill: #0B1220; }
+          .a4bM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .a4bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+
+        <rect x="14" y="20" width="160" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="a4bT" x="94" y="42" text-anchor="middle">Night 4</text>
+        <rect x="14" y="60" width="160" height="170" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4bH" x="26" y="84">Late load</text>
+        <text class="a4bB" x="26" y="102">3 bad partitions</text>
+        <text class="a4bM" x="26" y="130">system change:</text>
+        <text class="a4bN" x="26" y="148">a freshness alert</text>
+        <text class="a4bN" x="26" y="164">that pages once</text>
+        <text class="a4bM" x="26" y="192">builder session 3</text>
+
+        <rect x="186" y="20" width="160" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="a4bT" x="266" y="42" text-anchor="middle">Night 9</text>
+        <rect x="186" y="60" width="160" height="170" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4bH" x="198" y="84">Upstream outage</text>
+        <text class="a4bB" x="198" y="102">14 bad partitions</text>
+        <text class="a4bM" x="198" y="130">system change:</text>
+        <text class="a4bN" x="198" y="148">comms runbook, and</text>
+        <text class="a4bN" x="198" y="164">a dependency SLO</text>
+        <text class="a4bN" x="198" y="180">with the source</text>
+        <text class="a4bM" x="198" y="208">fix was never here</text>
+
+        <rect x="358" y="20" width="160" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="a4bT" x="438" y="42" text-anchor="middle">Night 15</text>
+        <rect x="358" y="60" width="160" height="170" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4bH" x="370" y="84">Corrupt batch</text>
+        <text class="a4bB" x="370" y="102">6, on time and wrong</text>
+        <text class="a4bM" x="370" y="130">system change:</text>
+        <text class="a4bN" x="370" y="148">correctness check</text>
+        <text class="a4bN" x="370" y="164">settlement already</text>
+        <text class="a4bN" x="370" y="180">computes by hand</text>
+        <text class="a4bM" x="370" y="208">the budget ran out here</text>
+
+        <rect x="530" y="20" width="160" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="a4bH" x="610" y="42" text-anchor="middle">Night 21</text>
+        <rect x="530" y="60" width="160" height="170" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4bH" x="542" y="84">Flapping connector</text>
+        <text class="a4bB" x="542" y="102">8, scattered</text>
+        <text class="a4bM" x="542" y="130">system change:</text>
+        <text class="a4bN" x="542" y="148">slow-window alert,</text>
+        <text class="a4bN" x="542" y="164">so 8 page once</text>
+        <text class="a4bN" x="542" y="180">retry with backoff</text>
+        <rect x="542" y="200" width="12" height="12" rx="2" fill="#F59E0B"></rect>
+        <text class="a4bM" x="562" y="210">no coverage signal</text>
+
+        <rect x="702" y="20" width="160" height="34" rx="8" fill="#94A3B8"></rect>
+        <text class="a4bH" x="782" y="42" text-anchor="middle">Night 27</text>
+        <rect x="702" y="60" width="160" height="170" rx="10" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="a4bH" x="714" y="84">Partial load</text>
+        <text class="a4bB" x="714" y="102">4, a shard missing</text>
+        <text class="a4bM" x="714" y="130">system change:</text>
+        <text class="a4bN" x="714" y="148">coverage check</text>
+        <text class="a4bN" x="714" y="164">on shard count</text>
+        <rect x="714" y="200" width="12" height="12" rx="2" fill="#F59E0B"></rect>
+        <text class="a4bM" x="734" y="210">no coverage signal</text>
+
+        <line x1="610" y1="234" x2="610" y2="254" stroke="#F59E0B" stroke-width="2"></line>
+        <line x1="610" y1="254" x2="782" y2="254" stroke="#F59E0B" stroke-width="2"></line>
+        <line x1="782" y1="254" x2="782" y2="234" stroke="#F59E0B" stroke-width="2"></line>
+        <text class="a4bN" x="696" y="272" text-anchor="middle">same gap: no coverage indicator</text>
+
+        <rect x="14" y="292" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="a4bN" x="38" y="304">Five postmortems, five actions. Only the review that reads all five sees two of them share a missing indicator.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - five incidents, five system changes, and the pair that turned out to be one gap.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 4, late load: a freshness alert that pages once<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Three partitions landed after their hour and were backfilled by ten. The reader saw three hours missing at nine and had them by the time she signed. The conditions: the alert fired three times for one delay, and the on-call learned of the delay from the first page and nothing from the next two. The change is a freshness alert on the burn-rate policy that pages at the first late hour and then holds, which is builder session 3's work. About 14 percent of a 97 percent budget, an action with a one-line scope.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 9, upstream outage: a communication runbook and a dependency SLO<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Fourteen partitions, two thirds of the budget, and not one of them fixable from Harborlight's side. The fix was never here, which is exactly why this postmortem is the one most teams write as "nothing to do". Two conditions were on this side and both become actions.</p>
+        <ul>
+          <li><strong>A communication runbook.</strong> When an upstream outage is confirmed, the settlement lead is told before 08:00 which hours are missing and when the backfill will land. She learned it at 08:50 from the report. Owner the on-call lead, date the 20th.</li>
+          <li><strong>A dependency SLO with the source team.</strong> A written expectation of the source's freshness, a path to page them once when it is missed, and the outage on their budget rather than only on Harborlight's. Owner the platform lead, date the 30th, because it involves another team and a conversation.</li>
+        </ul>
+        <p>Neither action makes the next outage impossible. Both make it cheaper: fifteen minutes of communication instead of a morning of surprise, and a source team that knows before nine.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 15, corrupt batch: a correctness check the settlement team already had<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Six partitions landed on time with a currency column that had arrived as text. Every freshness signal said perfect. The report was wrong for six hours and the finance analyst caught it against the bank file. The budget of 21.6 ran out on this night, so this is the postmortem written in the knowledge that the month's promise was already broken.</p>
+        <p>The change is almost embarrassing in its size: the control total that caught the fault was already being computed by hand in a spreadsheet every morning by the settlement team. Turning it into a correctness check on the pipeline, so a partition whose totals do not reconcile is marked bad and pages once, was one column and one comparison. The condition that mattered was not a missing capability. It was that the check lived on the reader's side of the boundary and the pipeline never saw it.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The most valuable correctness check in most data organisations already exists in a spreadsheet owned by whoever signs the report. It is rarely in the pipeline, because nobody asked the reader what they check by hand. That question is the cheapest postmortem action there is.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 21, flapping connector: a slow-window alert and retry with backoff<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Eight partitions, scattered across the night, each briefly missing and each backfilled within the hour by the connector reconnecting on its own. The reader may not have noticed at all. The on-call was paged eight times. Two conditions: the connector retried immediately and failed immediately, so each flap was a full failure, and each flap was a separate page. Two actions: retry with backoff on the connector, owner the platform engineer who owns it, and a slow-window alert so eight scattered failures burn the budget visibly and page once rather than eight times.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Night 27, partial load: a coverage check on shard count<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Four partitions landed on time, with totals that reconciled for the rows present, and each missing one of three shards. Freshness passed. Correctness, as written, passed. The job exited cleanly four times. The reader saw a report that was a third light for four hours. The single condition: nothing measured whether a partition had processed the amount of data it should have. The action is the one already written as a line in Part 1: a coverage check on shard count, a partition with fewer than three shards marked bad and paged once, owner Devi, by the 20th.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The review that reads all five together<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Each postmortem above is correct on its own. The finding none of them produces appears only when the five are read as a set: nights 21 and 27 are the same gap. A flapping connector that drops a partition and a load that lands two shards of three are both failures of <em>coverage</em>, the indicator that asks whether a partition processed as much data as it should have, and Harborlight had no coverage indicator at all. Two incidents, twelve partitions, more than half of a 97 percent budget, one missing measurement.</p>
+        <ul>
+          <li><strong>A single postmortem cannot see it.</strong> Night 21's document is about a connector. Night 27's is about shards. The word coverage appears in neither because the people writing each were, correctly, looking at their own night.</li>
+          <li><strong>The review is a standing meeting, not a reaction.</strong> Monthly, all postmortems since the last one, read for repeated conditions rather than repeated incidents. Repeated incidents are obvious. Repeated conditions hide behind different names.</li>
+          <li><strong>It changes the size of the action.</strong> Two small actions, a retry and a shard check, become one indicator that would have counted both nights and any future night that looks like neither. That is the change the review earns, and it is the one that gets reported upward in session 6 as "the month found a missing indicator", which is a sentence a steering committee can act on.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Rewrite one postmortem</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">No code, one document, one pass with a pen. Bring the postmortem, incident report or long chat thread for the worst night you brought from session 3. If you have nothing to hand, use Harborlight's night 9 first draft, which named the on-call twice, called the cause "upstream outage, nothing to do", and listed one action: "monitor the source more closely". The output is the same document, shorter, with a budget line and actions that can be checked on a date.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Take one real postmortem.</strong> The most recent one is fine; the one that still stings is better. Print it or open it where you can strike lines. Read it once straight through and write down, in one sentence, what is now different about the system because of it. If the sentence is about people, that is the finding, and the rest of the steps are the fix.</p>
+      </div>
+      <div class="step">
+        <p><strong>Strike every sentence that names a person.</strong> In the narrative, replace the name with a role and what that role knew at the time. "Ana ignored the alert" becomes "the on-call held a pager that had fired six times with this title that week". Names survive only in the owner column of the actions. Count what you struck; it is usually more than the room expects.</p>
+      </div>
+      <div class="step">
+        <p><strong>Rewrite the impact line in budget terms.</strong> Bad events, as a share of the month's allowance, and what was left afterwards. Harborlight's night 9: 14 partitions, about two thirds of a 97 percent budget of 21.6, about a third left for twenty-one nights. If your pipeline has no target yet, write the events and "against no agreed budget", which is itself a finding for session 2's homework.</p>
+      </div>
+      <div class="step">
+        <p><strong>Convert each action into owner-plus-date, or delete it.</strong> Every line in the actions list gets a named owner and a date, or it is struck. "Monitor the source more closely" has no owner, no date and no check that can be run on any morning; it goes. "Communication runbook, settlement told before 08:00, owner on-call lead, by the 20th" stays. Expect to lose half the list and to have a better list.</p>
+      </div>
+      <div class="step">
+        <p><strong>Read the last three postmortems together and write the one gap they share.</strong> Not the incidents, the conditions. Lay the three condition lists side by side and look for a condition, an indicator, a runbook, a contract, that is missing in at least two. Harborlight's answer was "no coverage indicator" from nights 21 and 27. Write it as an action, with an owner and a date, and it becomes the first line of session 6's report.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box bad">
+      <span class="label">✕ Harborlight's night 9 first draft, actions section</span>
+Root cause: upstream outage. Nothing we could have done on our side.
+Actions: monitor the source more closely. On-call to be more proactive about communicating with settlement.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ The same section after the pass</span>
+Impact: 14 partitions, about two thirds of the 97 percent budget (21.6), about a third remaining for 21 nights.
+Contributing conditions: source stopped publishing 02:10 to 06:40; no dependency SLO with the source; no path to page the source team; settlement learned of the gap at 08:50 from the report; 14 pages for one incident.
+Actions: (1) communication runbook, settlement told before 08:00 with missing hours and backfill time. Owner: on-call lead. Done by the 20th. (2) Dependency SLO with the source team, one page to them on breach. Owner: platform lead. Done by the 30th. (3) Burn-rate policy replaces per-partition paging. Owner: Devi. Done by the 15th.
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Do not add a "lessons learned" section.</strong> If a lesson is real it is a condition in the list or an action with an owner. If it is neither, it is a moral, and morals are what get filed. The shortest postmortem that ends in a checkable change beats the most thorough one that ends in an insight.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 5</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Finish the rewrite of the one postmortem and share it with the person who was on call that night. Write down whether they added anything to the account that the first draft did not have. That difference is what blameless buys.</li>
+      <li>Pull the last three postmortems for one pipeline and write the shared gap in one sentence, as an action with an owner and a date. If there is no shared gap, write that down too; three genuinely unrelated incidents is a finding.</li>
+      <li>For every action in those three documents, mark whether it was done by its date, done late, or never had a date. The proportion in the last column is the number to bring to session 6.</li>
+      <li>List every backfill the five incidents required and how long each took. Night 9's took until 09:30 and night 21's eight happened by themselves. Session 5 is about what those hours cost and where they belong in the budget.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">A postmortem's actions list reads: "Be more careful with shard counts during the load." What is wrong with it?</p>
+      <button class="qopt" type="button">A · Nothing; it correctly identifies the behaviour that caused the incident</button>
+      <button class="qopt" type="button">B · It should name the engineer who made the mistake so the action has an owner</button>
+      <button class="qopt" type="button">C · It is a wish: no system change, no owner, no date, and nothing that can be checked on any morning</button>
+      <p class="qwhy">An action names a change to the system, who owns making it and when it is done: "coverage check on shard count, owner Devi, by the 20th". A wish names a behaviour and hopes. Naming a person in the narrative costs the next honest account.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">Night 9's outage was entirely on the upstream source's side. The first draft concluded "root cause: upstream outage, nothing to do". Why is that the wrong conclusion?</p>
+      <button class="qopt" type="button">A · Several conditions on Harborlight's side made the night more expensive: no dependency SLO, no path to page the source, settlement told at 08:50, fourteen pages for one incident; each is an action</button>
+      <button class="qopt" type="button">B · Because the source team should have been named as responsible</button>
+      <button class="qopt" type="button">C · Because the on-call could have restarted the source</button>
+      <p class="qwhy">A single root cause outside your control produces no actions. Contributing conditions, tested by "would the night have been cheaper without this", produced a communication runbook and a dependency SLO, both with owners and dates.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Harborlight's night 21 postmortem proposed retry with backoff on a connector. Night 27's proposed a shard-count check. Each was correct. What did reading them together add?</p>
+      <button class="qopt" type="button">A · Nothing; two incidents with different causes need two different fixes</button>
+      <button class="qopt" type="button">B · That both were coverage failures and the pipeline had no coverage indicator at all: one missing measurement behind twelve bad partitions, which no single postmortem could see</button>
+      <button class="qopt" type="button">C · That the same engineer was on call both nights</button>
+      <p class="qwhy">Repeated incidents are obvious. Repeated conditions hide behind different names. The set review found the shared gap and turned two small fixes into one indicator that counts both nights and any future night like neither.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Blameless postmortems as professional norm</span>
+        <span class="note">Why a named person costs the next honest account, what to strike and what to keep, and blameless as the entry condition rather than the outcome.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Actions with owners and dates, against wishes</span>
+        <span class="note">The structural test: system change, named owner, date, checkable on a morning. Contributing conditions in place of a single root cause.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">What Harborlight's five incidents teach</span>
+        <span class="note">Nights 4, 9, 15, 21 and 27, each to its system change; night 9 at 14 partitions as two thirds of a 97 percent budget of 21.6; the shared coverage gap between nights 21 and 27.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">The incident package: timeline, impact, actions as a written template</span>
+        <span class="note">Builder session 6 assembles it. Here a leader decides what the document is allowed to conclude.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Backfills and the debt the incidents leave</span>
+        <span class="note">Session 5, next. Tonight only counts the hours each backfill took.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Vendor incident tooling</span>
+        <span class="note">Named as a category. Any tool that stores a timeline, an owner and a date will do; none of them writes the actions.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and incident review for AI services</span>
+        <span class="note">Not covered by design. The AI observability course owns those; the objects here are tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 4 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Blameless is the door</b><span>A named person costs the next honest account. Strike names from the narrative; keep them only as owners.</span></div>
+      <div class="cheat-item"><b>The outcome is a system change</b><span>Same incident impossible or cheaper. If the answer is people trying harder, it is an incident report.</span></div>
+      <div class="cheat-item"><b>Timeline in budget terms</b><span>Night 9: 14 partitions, two thirds of a 97 percent budget of 21.6, a third left for 21 nights.</span></div>
+      <div class="cheat-item"><b>Conditions, not a root cause</b><span>Test each: would the night have been cheaper without it. Several conditions, several actions.</span></div>
+      <div class="cheat-item"><b>Action against wish</b><span>System change, owner, date, checkable on a morning. "Be more careful" is deleted.</span></div>
+      <div class="cheat-item"><b>Five nights, five changes</b><span>Freshness alert once; comms runbook and dependency SLO; correctness check; slow-window alert and backoff; coverage check.</span></div>
+      <div class="cheat-item"><b>Read them as a set</b><span>Nights 21 and 27 were one gap: no coverage indicator. No single postmortem sees a shared condition.</span></div>
+      <div class="cheat-item"><b>Ask the reader what they check by hand</b><span>The settlement team's spreadsheet was the correctness check. Cheapest action there is.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Leader session 4 of 6 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="a3-on-call-is-a-design.html">← Leader session 3 · On-call is a design</a>
+      <a href="a5-backfills-and-debt.html">Leader session 5 · Backfills and debt as reliability work →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

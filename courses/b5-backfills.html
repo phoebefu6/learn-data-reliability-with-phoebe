@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Builder session 5 of 8. A backfill is a rerun that must not double anything: idempotent partition steps as delete-then-insert keyed on partition_hour, the watermark moved back to the first bad partition, and the settlement report that was already signed against Harborlight's six corrupt night-15 partitions. Announce before the recompute, re-trigger downstream in dependency order, compare the totals, file the diff.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Backfills without breaking downstream - learn data reliability with phoebe">
+<meta property="og:description" content="Builder session 5 of 8. Running it twice must equal running it once, and a signed number changes only after it is announced.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/courses/b5-backfills.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Backfills without breaking downstream - learn data reliability with phoebe">
+<meta name="twitter:description" content="Identify, announce, recompute, re-trigger in order, compare totals, file the diff. Night 15, safely.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-data-reliability-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Builder session 5 · Backfills without breaking downstream - learn data reliability with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-data-reliability-with-phoebe</a> / Builder session 5 of 8</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Data Reliability with Phoebe · Builder session 5 of 8</div>
+    <h1>Backfills without <span class="accent">breaking downstream</span></h1>
+    <p class="sub">Session 4's runbook ends with "the source is answering again, open the backfill runbook". Tonight is that runbook. A backfill is a rerun, and a rerun is dangerous in two ways that have nothing to do with each other: it can double the rows it was meant to replace, and it can quietly change a number somebody has already signed. Harborlight's night 15 is the case for both. Six partitions landed on time with a currency column parsed wrong, the settlement report was signed against them at 07:00, and the recompute that fixed them moved a signed total by twelve thousand.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Advanced</span>
+      <span class="chip audience">Data and analytics engineers</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-20 · Idempotency, watermarks and the signed number</span>
+      <span class="a3" style="flex:4">20-40 · Build-along: backfill night 15 safely</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where tonight sits in the builder track</h2>
+    </div>
+    <p class="lede">Eight sessions, one artifact: a <strong>reliability contract</strong> for one pipeline. Sessions 1 to 3 measured, promised and alerted; session 4 wrote the page the on-call follows. Three of Harborlight's five incidents left wrong or missing data in the table after the night was over, and the contract needs a <strong>backfill</strong> procedure that repairs it without doubling rows and without changing a signed number in silence. Session 6 writes the incident package that records what the backfill changed.</p>
+
+    <div class="legend">
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">🔍 Every diagram zooms</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A partition step that is safe to run twice, written as delete-then-insert keyed on <code class="mono">partition_hour</code> inside one transaction. A watermark that records how far the pipeline has correctly processed, and the move that sends it back to the first bad partition. A consumers table the backfill job reads so the notification is mechanical. And the sequence for night 15 in the order it has to happen: identify, announce, recompute, re-trigger downstream in dependency order, compare the totals, file the diff.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why a rerun is the most dangerous thing a pipeline does<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A pipeline's normal run touches each partition once. A backfill touches partitions that have already been touched, that downstream jobs have already read, and that people have already made decisions from. Every assumption the normal run gets for free - the partition is empty, nobody has read it, the number can still change - is false during a backfill. The two failures that follow are different in kind.</p>
+        <p>The first is mechanical: a step that appends rows will append them again, and the partition now has twice the orders. The second is human: a step that replaces rows correctly will correctly replace a total that the finance director signed at 07:00, and nobody will know until the two versions of the report are side by side in a dispute. The first failure is fixed with a delete. The second is fixed with a message sent before the delete.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Harborlight's previous backfill, months before night 15, reran a week of partitions to fix a timezone bug. The step appended. Seven days of orders were doubled, the settlement totals for the week doubled with them, and the first person to notice was a merchant whose payout arrived twice. The recompute was correct; the rerun was not idempotent. Every rule tonight is downstream of that week.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary tonight adds<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Idempotent</strong> - running the step twice leaves the table exactly as running it once would. For a partition step: the partition's output is replaced, never added to.</li>
+          <li><strong>Partition overwrite</strong> - the idempotent shape: delete the partition's rows, insert the recomputed ones, both keyed on <code class="mono">partition_hour</code>, inside one transaction so a reader never sees the gap.</li>
+          <li><strong>Watermark</strong> - the pipeline's record of how far it has correctly processed. A single timestamp per pipeline; every partition at or before it is trusted.</li>
+          <li><strong>Backfill</strong> - moving the watermark back to the hour before the first bad partition and running the idempotent step forward to the last bad one.</li>
+          <li><strong>Signed number</strong> - a total that a named person has approved and others have acted on. It can still be corrected; it cannot be corrected silently.</li>
+          <li><strong>Consumers table</strong> - a record of which reports, exports and models read which partitions, so the backfill job can list who to tell and what to re-run.</li>
+          <li><strong>Replay</strong> - re-triggering the consumers of the corrected partitions in dependency order, so a report that feeds an export is rebuilt before the export is.</li>
+          <li><strong>Backfill log</strong> - one row per backfill: the partitions, the total before, the total after, when it was announced, when it ran, who ran it.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers idempotency and watermarks</span>
+      <h2>A backfill is a rerun that must not double anything</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">Two properties make a rerun safe, and they are properties of the pipeline, not of the person running it. The <strong>step</strong> must replace its own output exactly, so running it twice equals running it once. The <strong>watermark</strong> must say how far the output is correct, so a backfill knows where to start and does not reprocess a month to fix six hours.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top left: the partition for night 15 hour 05 run twice with an append step, giving 4,120 rows then 8,240 rows in red. Top right: the same partition run twice with a delete-then-insert step keyed on partition_hour, giving 4,120 rows both times. Below: the 24 hours of night 15 as cells, hours 05 to 10 red for the six corrupt partitions, with the watermark drawn at 23:00 before the backfill and an arrow moving it back to 04:00, the hour before the first bad partition.">
+        <style>
+          .b5aH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b5aT { font: 700 11px Inter, sans-serif; fill: #fff; }
+          .b5aL { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+          .b5aB { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b5aM { font: 400 11px Inter, sans-serif; fill: #56637A; }
+          .b5aR { font: 800 11px Inter, sans-serif; fill: #991B1B; }
+          .b5aN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+        <defs>
+          <marker id="b5aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+          <marker id="b5aAm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#F59E0B"></path></marker>
+        </defs>
+
+        <text class="b5aH" x="14" y="24">The same partition, run twice</text>
+
+        <text class="b5aR" x="14" y="52">append: the rows double</text>
+        <rect x="14" y="64" width="130" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="b5aT" x="79" y="86" text-anchor="middle">night 15 · hour 05</text>
+        <line x1="146" y1="81" x2="206" y2="81" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5aAr)"></line>
+        <rect x="210" y="64" width="190" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="b5aL" x="305" y="86" text-anchor="middle">run 1 · 4,120 rows</text>
+        <line x1="146" y1="92" x2="206" y2="129" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5aAr)"></line>
+        <rect x="210" y="112" width="190" height="34" rx="8" fill="#991B1B"></rect>
+        <text class="b5aT" x="305" y="134" text-anchor="middle">run 2 · 8,240 rows</text>
+        <text class="b5aM" x="14" y="172">insert into, then select: run it twice and the</text>
+        <text class="b5aM" x="14" y="188">settlement total doubles with the rows.</text>
+
+        <line x1="440" y1="44" x2="440" y2="196" stroke="#C4CDD9" stroke-width="1" stroke-dasharray="3 3"></line>
+
+        <text class="b5aH" x="460" y="52">overwrite keyed on partition_hour: the rows are replaced</text>
+        <rect x="460" y="64" width="130" height="34" rx="8" fill="#0F172A"></rect>
+        <text class="b5aT" x="525" y="86" text-anchor="middle">night 15 · hour 05</text>
+        <line x1="592" y1="81" x2="652" y2="81" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5aAr)"></line>
+        <rect x="656" y="64" width="190" height="34" rx="8" fill="#CBD5E1"></rect>
+        <text class="b5aL" x="751" y="86" text-anchor="middle">run 1 · 4,120 rows</text>
+        <line x1="592" y1="92" x2="652" y2="129" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5aAr)"></line>
+        <rect x="656" y="112" width="190" height="34" rx="8" fill="#1E293B"></rect>
+        <text class="b5aT" x="751" y="134" text-anchor="middle">run 2 · 4,120 rows</text>
+        <text class="b5aM" x="460" y="172">delete where partition_hour = 05, then insert, in one</text>
+        <text class="b5aM" x="460" y="188">transaction. Twice equals once.</text>
+
+        <text class="b5aH" x="14" y="222">Night 15 · the watermark moves back to the first bad partition</text>
+        <rect x="14" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="49.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="85" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="120.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="156" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="191.5" y="232" width="32" height="30" fill="#991B1B"></rect>
+        <rect x="227" y="232" width="32" height="30" fill="#991B1B"></rect>
+        <rect x="262.5" y="232" width="32" height="30" fill="#991B1B"></rect>
+        <rect x="298" y="232" width="32" height="30" fill="#991B1B"></rect>
+        <rect x="333.5" y="232" width="32" height="30" fill="#991B1B"></rect>
+        <rect x="369" y="232" width="32" height="30" fill="#991B1B"></rect>
+        <rect x="404.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="440" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="475.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="511" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="546.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="582" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="617.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="653" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="688.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="724" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="759.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="795" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <rect x="830.5" y="232" width="32" height="30" fill="#CBD5E1"></rect>
+        <text class="b5aB" x="30" y="276" text-anchor="middle">00</text>
+        <text class="b5aB" x="207.5" y="276" text-anchor="middle">05</text>
+        <text class="b5aB" x="385" y="276" text-anchor="middle">10</text>
+        <text class="b5aB" x="562.5" y="276" text-anchor="middle">15</text>
+        <text class="b5aB" x="740" y="276" text-anchor="middle">20</text>
+        <text class="b5aB" x="846.5" y="276" text-anchor="middle">23</text>
+
+        <line x1="862.5" y1="226" x2="862.5" y2="268" stroke="#0F172A" stroke-width="2"></line>
+        <line x1="191.5" y1="226" x2="191.5" y2="268" stroke="#F59E0B" stroke-width="3"></line>
+        <line x1="850" y1="292" x2="200" y2="292" stroke="#F59E0B" stroke-width="2" marker-end="url(#b5aAm)"></line>
+        <text class="b5aM" x="862" y="312" text-anchor="end">before: processed_through 23:00</text>
+        <text class="b5aN" x="196" y="312">after: 04:00, the hour before the first bad partition</text>
+        <text class="b5aM" x="14" y="338">Six partitions recompute, hours 05 to 10. Nothing from hour 00 is touched, and nothing after 10 needs to be.</text>
+
+        <rect x="14" y="366" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b5aN" x="38" y="378">Run the overwrite twice and the count is 4,120 both times. That is the whole test of idempotency.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - append against overwrite for one partition, and the watermark moving back to hour 05.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Idempotency: a partition rerun replaces its own output exactly<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The test is one sentence: run the step twice and the table is identical to running it once. For a partitioned table the only shape that passes is <strong>replace the partition</strong>: delete every row whose <code class="mono">partition_hour</code> matches, insert the recomputed rows for that hour, and do both inside one transaction so no reader ever sees an hour with zero rows. Platforms that offer <code class="mono">insert overwrite partition</code> do the same thing in one statement; the guarantee is the same.</p>
+        <div class="prompt-box bad">
+          <span class="label">✗ The step that doubles</span>
+insert into fact.orders (partition_hour, order_id, amount_ccy, amount_base)
+select partition_hour, order_id, amount_ccy, amount_base
+from staging.orders_parsed
+where partition_hour = timestamp '2026-08-15 05:00';
+-- run once: 4,120 rows for hour 05.  run twice: 8,240.  The settlement total doubles with it.
+        </div>
+        <div class="prompt-box good">
+          <span class="label">★ The step that replaces</span>
+begin;
+delete from fact.orders
+ where partition_hour = timestamp '2026-08-15 05:00';
+insert into fact.orders (partition_hour, order_id, amount_ccy, amount_base)
+select partition_hour, order_id, amount_ccy, amount_base
+from staging.orders_parsed
+where partition_hour = timestamp '2026-08-15 05:00';
+commit;
+-- run once: 4,120 rows.  run twice: 4,120 rows.  Run it a hundred times: 4,120 rows.
+        </div>
+        <p>Never append during a rerun, and the cleanest way to guarantee that is to never append at all: if the normal nightly step is the same delete-then-insert, a backfill is the normal step pointed at an old hour. One code path, tested every night, is the code path that runs when it matters.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Watermarks: how far the pipeline has correctly processed<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A watermark is one timestamp per pipeline, <code class="mono">processed_through</code>, and its meaning is strict: every partition at or before it is correct. The nightly run reads it, processes the hours after it, and advances it. A backfill is the same run with the watermark first moved <strong>back to the hour before the first bad partition</strong>. For night 15 that is 04:00: hours 05 to 10 recompute, hours 00 to 04 are never touched, and the six hours after 10 were already right.</p>
+        <ul>
+          <li><strong>Back to the first bad partition, not to the start.</strong> The temptation is to "rerun the month to be safe". Idempotency makes that harmless to the table and expensive to everything else: 720 partitions of compute, 720 partitions of downstream re-reads, and a signed report for every one of the thirty days now changing under its readers. Six hours is six hours.</li>
+          <li><strong>The watermark is also a signal.</strong> Downstream jobs that process "everything since the watermark" see it move back and know that range is being rewritten. Moving it is how the pipeline tells the truth about what it currently trusts.</li>
+          <li><strong>Night 9 needed no reset.</strong> Fourteen partitions never landed, so the watermark never advanced past night 8 at 23:00. When the source came back the normal run started from the watermark and caught up. That is the watermark doing its job with nobody touching it.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Three incidents needed a backfill, and each needed something different<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <table class="clean">
+          <thead><tr><th>Incident</th><th>Bad partitions</th><th>What was wrong in the table</th><th>What the backfill needed</th></tr></thead>
+          <tbody>
+            <tr><td>Night 15 · corrupt batch</td><td><strong>6</strong>, hours 05 to 10</td><td>Landed on time, currency column parsed as text, <code class="mono">amount_base</code> wrong</td><td>Recompute the six with the fixed currency parsing, after announcing, because the report was signed against them</td></tr>
+            <tr><td>Night 27 · partial load</td><td><strong>4</strong></td><td>Landed on time with two of three shards</td><td>Rerun the four once the missing shard was available; the watermark had advanced past them, so it moves back</td></tr>
+            <tr><td>Night 9 · upstream outage</td><td><strong>14</strong></td><td>Never landed</td><td>Recompute the fourteen once the source was back, and tell everybody who read the report stale that the numbers are now real</td></tr>
+          </tbody>
+        </table>
+        <p>Nights 4 and 21 needed none. The late load and the flapping connector delivered their rows late, and the connector's retries completed the short partitions before morning; the table ended those nights whole and only the reader's wait was counted. A backfill is for wrong or missing data, not for a bad indicator.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the signed number and the replay</span>
+      <h2>The downstream has already read the wrong numbers</h2>
+      <span class="tag concept">9 min live</span>
+    </div>
+    <p class="lede">By the time a backfill runs, the bad partitions have been read. Reports were built from them, exports were sent, a model was trained, and on night 15 a settlement total was <strong>signed</strong>. Correcting the table is the easy half. The hard half is that every one of those readers now holds a number that is about to be wrong, and some of them acted on it.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six steps left to right: identify the bad partitions, announce with the old total and the reader list, recompute with delete then insert keyed on partition_hour, re-trigger downstream in dependency order, compare the signed total against the new one, file the diff in the backfill log. An amber vertical line between announce and recompute is labelled signed-number gate, no recompute before the announcement. A strip below gives night 15's timeline from the 07:00 signing to the 13:05 comparison, and the filed totals.">
+        <style>
+          .b5bH { font: 800 12px Inter, sans-serif; fill: #0B1220; }
+          .b5bT { font: 800 11px Inter, sans-serif; fill: #fff; }
+          .b5bW { font: 400 10px Inter, sans-serif; fill: #fff; }
+          .b5bL { font: 800 11px Inter, sans-serif; fill: #0B1220; }
+          .b5bB { font: 400 10px Inter, sans-serif; fill: #0B1220; }
+          .b5bM { font: 400 10px Inter, sans-serif; fill: #56637A; }
+          .b5bK { font: 800 10px Inter, sans-serif; fill: #0B1220; }
+          .b5bN { font: 700 11px Inter, sans-serif; fill: #0B1220; }
+        </style>
+        <defs>
+          <marker id="b5bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C4CDD9"></path></marker>
+        </defs>
+
+        <text class="b5bH" x="14" y="24">Night 15's backfill, in the order it has to happen</text>
+
+        <rect x="14" y="44" width="130" height="70" rx="8" fill="#CBD5E1"></rect>
+        <text class="b5bL" x="79" y="66" text-anchor="middle">1 · identify</text>
+        <text class="b5bB" x="79" y="84" text-anchor="middle">reconciled = false</text>
+        <text class="b5bB" x="79" y="100" text-anchor="middle">6 partitions, 05 to 10</text>
+        <line x1="146" y1="79" x2="152" y2="79" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5bAr)"></line>
+
+        <rect x="156" y="44" width="130" height="70" rx="8" fill="#F59E0B"></rect>
+        <text class="b5bL" x="221" y="66" text-anchor="middle">2 · announce</text>
+        <text class="b5bB" x="221" y="84" text-anchor="middle">old total, who read it,</text>
+        <text class="b5bB" x="221" y="100" text-anchor="middle">when it will run</text>
+
+        <line x1="292" y1="36" x2="292" y2="150" stroke="#F59E0B" stroke-width="3"></line>
+        <text class="b5bK" x="292" y="166" text-anchor="middle">signed-number gate</text>
+        <text class="b5bM" x="292" y="180" text-anchor="middle">no recompute before the announcement</text>
+
+        <rect x="298" y="44" width="130" height="70" rx="8" fill="#0F172A"></rect>
+        <text class="b5bT" x="363" y="66" text-anchor="middle">3 · recompute</text>
+        <text class="b5bW" x="363" y="84" text-anchor="middle">delete then insert</text>
+        <text class="b5bW" x="363" y="100" text-anchor="middle">keyed on the hour</text>
+        <line x1="430" y1="79" x2="436" y2="79" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5bAr)"></line>
+
+        <rect x="440" y="44" width="130" height="70" rx="8" fill="#1E293B"></rect>
+        <text class="b5bT" x="505" y="66" text-anchor="middle">4 · re-trigger</text>
+        <text class="b5bW" x="505" y="84" text-anchor="middle">downstream, in</text>
+        <text class="b5bW" x="505" y="100" text-anchor="middle">dependency order</text>
+        <line x1="572" y1="79" x2="578" y2="79" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5bAr)"></line>
+
+        <rect x="582" y="44" width="130" height="70" rx="8" fill="#94A3B8"></rect>
+        <text class="b5bL" x="647" y="66" text-anchor="middle">5 · compare</text>
+        <text class="b5bB" x="647" y="84" text-anchor="middle">signed total against</text>
+        <text class="b5bB" x="647" y="100" text-anchor="middle">the new total</text>
+        <line x1="714" y1="79" x2="720" y2="79" stroke="#C4CDD9" stroke-width="1.5" marker-end="url(#b5bAr)"></line>
+
+        <rect x="724" y="44" width="130" height="70" rx="8" fill="#CBD5E1"></rect>
+        <text class="b5bL" x="789" y="66" text-anchor="middle">6 · file the diff</text>
+        <text class="b5bB" x="789" y="84" text-anchor="middle">backfill_log: old,</text>
+        <text class="b5bB" x="789" y="100" text-anchor="middle">new, announced_at</text>
+
+        <rect x="14" y="204" width="852" height="70" rx="8" fill="#F1F5F9" stroke="#CBD5E1"></rect>
+        <text class="b5bB" x="26" y="226">07:00 report signed against six corrupt partitions · 09:50 finance's control total disagrees · 11:40 announced</text>
+        <text class="b5bB" x="26" y="244">12:15 recompute, 6 partitions · 12:40 settlement report re-run, then payout export and forecast · 13:05 totals compared</text>
+        <text class="b5bB" x="26" y="262">filed: total_before 1,284,310.55 (the signed figure) · total_after 1,271,902.10 · diff -12,408.45 · announced 11:40</text>
+
+        <rect x="14" y="300" width="14" height="14" rx="3" fill="#F59E0B"></rect>
+        <text class="b5bN" x="38" y="312">A signed number that changes without an announcement is a governance event nobody agreed to. Announce first.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the backfill sequence as a strip, with the signed-number gate between announce and recompute.</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The signed number: a backfill that changes it is a governance event<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>At 07:00 on the morning after night 15 the settlement duty lead signed a total of 1,284,310.55. Six of the partitions behind it had a currency column that arrived as text, and the base-currency amount for those rows was wrong. The recompute produced 1,271,902.10. Both numbers are the output of the same pipeline; only one of them has a signature on it, and merchants were paid against it.</p>
+        <p>A backfill that silently replaces a signed total has not fixed a bug. It has created two versions of a document that people act on, with no record of which one anybody saw. The rule is that a backfill touching partitions a signed report read is <strong>announced before it runs</strong>: to whom the report was signed by, with the old total, the expected direction of the change, and the time it will run. Then it runs. Then the old and new totals are written down next to each other, with the announcement time, in a place that outlives the chat thread.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Finance's own spreadsheet caught night 15 at 09:50, when its control total disagreed with the signed report. The question they asked first was not "how do we fix it"; it was "what did we pay against". A backfill log with the signed figure, the corrected figure and the announcement time is the answer to that question, and it is one insert statement.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Consumers are a table the job reads, not a list somebody remembers<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Who read these partitions" is a question with a changing answer. A new export is added, a model starts reading the table, a report is retired. If the backfill's notification depends on the engineer remembering the list, the list is wrong within a quarter and the newest consumer is the one nobody tells.</p>
+        <p>The fix is a <strong>consumers table</strong>: one row per downstream job that reads the orders table, with its kind, its owner, its dependency rank and the command that re-triggers it, plus a read log that records which partitions it consumed and when. The backfill job joins its target partitions to the read log and gets the list mechanically. On night 15 that list was three rows: the settlement report, the payout export that depends on it, and the demand forecast. Each row carries the person to tell and the order to run in, and the announcement in step 2 is generated from it rather than composed.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The replay order: partitions, then downstream in dependency order, then compare<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Backfill the partitions first.</strong> All six, inside the transaction, so no downstream job is re-triggered against a half-corrected range. The partition log rows get a <code class="mono">backfilled_at</code> stamp; <code class="mono">reconciled</code> stays false, because the month's record is what the reader saw that morning and the 35 bad partitions stay 35.</li>
+          <li><strong>Re-trigger downstream in dependency order.</strong> Rank 1 before rank 2. The settlement report rebuilds first; the payout export reads the rebuilt report and so runs after it; the forecast reads the table directly and can run alongside the export. Running the export before the report re-sends the wrong payouts with a fresh timestamp.</li>
+          <li><strong>Compare the totals last.</strong> The signed figure against the figure the rebuilt report now shows, for exactly the same partitions. The diff is the size of what the readers were told wrong, and it goes in the log next to both totals.</li>
+          <li><strong>File the diff.</strong> One row in the backfill log: partitions, total before, total after, announced at, ran at, who ran it. The incident package in session 6 quotes that row; nobody reconstructs it from memory.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The honest cost: compute, attention and where it gets budgeted<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>A backfill spends compute.</strong> Six partitions recomputed, three downstream jobs re-run, one of them a model. Night 9's fourteen partitions were more than half a night's work redone in daylight, on the same warehouse the daytime analysts use.</li>
+          <li><strong>A backfill spends attention.</strong> The announcement, the reply from finance, the merchant who asks why the payout moved. None of that is on a dashboard and all of it is real.</li>
+          <li><strong>A backfill spends trust, once.</strong> A signed number that moves with an announcement is a correction. One that moves without it is the last time that report is trusted without a second spreadsheet beside it.</li>
+          <li><strong>The cost belongs in the budget conversation.</strong> The error budget from session 3 counts the bad partitions; it does not yet count what repairing them cost. Putting that cost next to the budget, and deciding how much of a quarter's engineering time backfills may consume before the pipeline itself gets fixed, is a leadership decision, and the leader track's session 5 is where it is made.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Backfill night 15 safely</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">Use Harborlight's partition log, the orders fact table and the consumers table. The steps run in the order the strip shows: identify, announce, recompute, re-trigger, compare, file. The announcement comes before the recompute on purpose, and the before-total is captured when the announcement goes out, because after the delete it no longer exists anywhere except the signed report.</p>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Identify the bad partitions from the partition log.</strong> Night 15, <code class="mono">reconciled = false</code>. Put the hours in a targets table so every later step reads the same list. Harborlight: six rows, hours 05 to 10, all on time, all three shards.</p>
+      </div>
+      <div class="step">
+        <p><strong>List the consumers and announce, capturing the before-total.</strong> Join the targets to the read log to get who consumed them, in dependency order. Insert the backfill log row now with <code class="mono">total_before</code> and <code class="mono">announced_at</code>. Send the announcement generated from those rows. Do not proceed until it has gone.</p>
+      </div>
+      <div class="step">
+        <p><strong>Write the idempotent recompute.</strong> Delete-then-insert keyed on <code class="mono">partition_hour</code>, inside one transaction, with the fixed currency parsing. Run it. Count the rows. Run it again. Count again: the same.</p>
+      </div>
+      <div class="step">
+        <p><strong>Reset the watermark to the hour before the first bad partition.</strong> 04:00 for night 15. The scheduler's next tick runs the same step forward from there and re-advances the watermark; tonight you have already run it by hand, and idempotency is why doing both is harmless.</p>
+      </div>
+      <div class="step">
+        <p><strong>Re-trigger downstream in dependency order.</strong> Rank 1, wait, rank 2. The commands come from the consumers table, not from memory.</p>
+      </div>
+      <div class="step">
+        <p><strong>Compute the settlement total after, compare with the signed figure, and complete the log row.</strong> <code class="mono">total_after</code>, <code class="mono">finished_at</code>, and the diff. The row is what session 6 quotes.</p>
+      </div>
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 1 · identify the bad partitions</span>
+create temp table backfill_targets as
+select partition_hour, row_count, reconciled, shard_count, landed_at
+from ops.orders_partition_log
+where partition_hour &gt;= timestamp '2026-08-15 00:00'
+  and partition_hour &lt;  timestamp '2026-08-16 00:00'
+  and not reconciled
+order by partition_hour;
+-- night 15: 6 rows · hours 05, 06, 07, 08, 09, 10 · every one landed inside its hour with shard_count 3 · reconciled false
+-- on time and wrong: freshness and coverage passed, correctness is what caught them
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 2 · the consumers who read them, and the announcement row</span>
+-- who consumed the bad partitions, in the order they must be re-run
+select c.consumer, c.kind, c.owner, c.dependency_rank, c.trigger_command,
+       count(distinct r.partition_hour) as bad_partitions_read
+from ops.consumers c
+join ops.partition_reads r on r.consumer = c.consumer and r.pipeline = 'orders'
+where r.partition_hour in (select partition_hour from backfill_targets)
+group by 1, 2, 3, 4, 5
+order by c.dependency_rank, c.consumer;
+-- night 15: settlement_report (report, finance duty lead, rank 1, 6 read)
+--           payout_export     (export, treasury,          rank 2, 6 read)   depends on settlement_report
+--           demand_forecast   (model,  planning,          rank 2, 6 read)
+
+-- the log row goes in now, with the total as it stands before anything is deleted
+insert into ops.backfill_log (backfill_id, pipeline, partitions, total_before, announced_at, announced_to, run_by)
+select 'bf-2026-08-16-orders', 'orders',
+       (select array_agg(partition_hour) from backfill_targets),
+       (select sum(amount_base) from fact.orders
+         where partition_hour in (select partition_hour from backfill_targets)),
+       current_timestamp,
+       'finance duty lead, treasury, planning',
+       current_user;
+-- total_before 1,284,310.55 · equals the signed settlement figure for night 15 · announced_at 11:40
+-- the announcement carries: the six hours, the signed total, "expected to fall", and "runs at 12:15"
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 3 · the idempotent recompute, inside one transaction</span>
+begin;
+
+delete from fact.orders
+ where partition_hour in (select partition_hour from backfill_targets);
+
+insert into fact.orders (partition_hour, order_id, amount_ccy, currency, amount_base)
+select r.partition_hour, r.order_id,
+       try_cast(r.amount_raw as decimal(18, 2))                as amount_ccy,   -- the fixed parsing: numeric, not text
+       r.currency,
+       try_cast(r.amount_raw as decimal(18, 2)) * fx.rate_to_base as amount_base
+from raw.orders r
+join ref.fx_rates fx on fx.currency = r.currency and fx.rate_date = date(r.partition_hour)
+where r.partition_hour in (select partition_hour from backfill_targets);
+
+update ops.orders_partition_log
+   set backfilled_at = current_timestamp          -- reconciled stays false: the month's record is what the reader saw
+ where partition_hour in (select partition_hour from backfill_targets);
+
+commit;
+
+select partition_hour, count(*) as rows_now
+from fact.orders
+where partition_hour in (select partition_hour from backfill_targets)
+group by 1 order by 1;
+-- hour 05: 4,120 · 06: 3,987 · 07: 4,402 · 08: 4,655 · 09: 4,910 · 10: 5,033
+-- run the transaction again and this query returns the same six counts. That is the test.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 4 · reset the watermark</span>
+update ops.watermarks
+   set processed_through = (select min(partition_hour) from backfill_targets) - interval '1 hour',
+       moved_by          = current_user,
+       moved_at          = current_timestamp,
+       reason            = 'bf-2026-08-16-orders'
+ where pipeline = 'orders';
+-- night 15: processed_through moves from 2026-08-15 23:00 back to 2026-08-15 04:00
+-- the scheduler's next tick runs the step for 05 through 10 and advances the watermark again
+-- night 9 needed none of this: nothing landed, so the watermark never moved past night 8 at 23:00
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 5 · re-trigger downstream in dependency order</span>
+select dependency_rank, consumer, trigger_command
+from ops.consumers
+where consumer in ('settlement_report', 'payout_export', 'demand_forecast')
+order by dependency_rank, consumer;
+-- 1  settlement_report   harbor run settlement --report-day 2026-08-15 --reason bf-2026-08-16-orders
+-- 2  demand_forecast     harbor run forecast --from 2026-08-15 --reason bf-2026-08-16-orders
+-- 2  payout_export       harbor run payout-export --report-day 2026-08-15 --reason bf-2026-08-16-orders
+-- run rank 1, wait for it to finish, then run rank 2. The export reads the rebuilt report, never the old one.
+    </div>
+
+    <div class="prompt-box good">
+      <span class="label">★ Step 6 · compare the totals and complete the log row</span>
+update ops.backfill_log
+   set total_after = (select sum(amount_base) from fact.orders
+                       where partition_hour in (select partition_hour from backfill_targets)),
+       finished_at = current_timestamp
+ where backfill_id = 'bf-2026-08-16-orders';
+
+select b.backfill_id, r.signed_total, r.signed_by, r.signed_at,
+       b.total_before, b.total_after, b.total_after - b.total_before as diff,
+       b.announced_at, b.finished_at
+from ops.backfill_log b
+join fin.settlement_signoffs r on r.report_day = date '2026-08-15'
+where b.backfill_id = 'bf-2026-08-16-orders';
+-- signed_total 1,284,310.55 at 07:00 · total_before 1,284,310.55 · total_after 1,271,902.10 · diff -12,408.45
+-- announced 11:40 · finished 13:05 · the report was wrong for six hours and the record says exactly which six
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Before-total first, or it is gone.</strong> Once step 3's delete runs, the only place the old total exists is the signed PDF. Capturing <code class="mono">total_before</code> in the same statement as the announcement is what makes the diff in step 6 a fact rather than a reconstruction.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 6</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li>Find the step in your own pipeline that writes the fact table and run it twice against a copy of one partition. Count the rows after each run. If the counts differ, rewrite the step as delete-then-insert keyed on the partition before doing anything else tonight.</li>
+      <li>Find your pipeline's watermark. If it does not have one, add <code class="mono">processed_through</code> to a watermarks table and have the run read and advance it. Then move it back one hour by hand and watch what the next run does.</li>
+      <li>Build the consumers table for your fact table: every report, export and model that reads it, with owner, dependency rank and the re-trigger command. Ask each owner one question: "if these numbers changed, would you want to know before or after". Their answer is the announcement rule for that row.</li>
+      <li>Write the backfill log row for the last backfill your team ran, from memory and from whatever records exist. Note every field you could not fill in. Session 6's incident package will ask for the same fields.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">A partition step is run twice by mistake. Under which shape is the table identical after the second run?</p>
+      <button class="qopt" type="button">A · Insert-select filtered to the partition hour, because the filter limits the rows</button>
+      <button class="qopt" type="button">B · Any step, as long as it runs inside a transaction</button>
+      <button class="qopt" type="button">C · Delete the partition's rows and insert the recomputed ones, keyed on partition_hour, in one transaction: twice equals once, so the count is 4,120 both times</button>
+      <p class="qwhy">A filtered insert still appends: 4,120 rows becomes 8,240. The transaction stops readers seeing the gap, but only the delete stops the doubling. Idempotency is a property of the step, not of how carefully it is run.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">The settlement report for night 15 was signed at 07:00 against six corrupt partitions. The recompute is ready at 11:30. What has to happen before it runs?</p>
+      <button class="qopt" type="button">A · The people the report was signed by and for are told, with the old total, the expected direction and the run time, and the old total is recorded; a signed number changing silently is a governance event</button>
+      <button class="qopt" type="button">B · Nothing; the recompute is correct, so running it immediately minimises the time the report is wrong</button>
+      <button class="qopt" type="button">C · The watermark is moved forward to skip the signed partitions so the signed total is preserved</button>
+      <p class="qwhy">Correct and silent creates two versions of a document merchants were paid against, with no record of which one anybody saw. Announce first, then run, then file both totals with the announcement time.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">Why does the backfill move the watermark back to 04:00 on night 15 rather than rerunning the month "to be safe"?</p>
+      <button class="qopt" type="button">A · Because the watermark cannot move more than one day</button>
+      <button class="qopt" type="button">B · Because the watermark records how far the pipeline has correctly processed: hours 00 to 04 and 11 to 23 were right, and rerunning 720 partitions costs 720 partitions of compute, downstream re-reads and a changed signed report for every one of thirty days</button>
+      <button class="qopt" type="button">C · Because idempotency only holds for six partitions at a time</button>
+      <p class="qwhy">Idempotency makes the full rerun harmless to the table and expensive to everything else. Six bad hours is six hours of recompute; the watermark is what lets the backfill know that.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What tonight maps to</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Idempotency, watermarks and replay as operating discipline</span>
+        <span class="note">Established practice, taught to working depth: partition overwrite as delete-then-insert keyed on partition_hour, the watermark as the record of correct-through, and the replay in dependency order.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">The settlement report and the signed number</span>
+        <span class="note">A backfill that changes a signed total is announced before it runs, and the old and new totals are filed with the announcement time. Night 15's six partitions are the worked case.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill solid">✓</span>
+        <span class="name">Which of the five incidents needed a backfill</span>
+        <span class="note">Nights 15, 27 and 9, each needing something different; nights 4 and 21 needed none. The partition log keeps reconciled false so the month's 35 bad partitions stay 35.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Budgeting the cost of backfills</span>
+        <span class="note">Named here as compute, attention and trust. The leader track's session 5 puts that cost next to the error budget and decides how much of a quarter it may consume.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Pipeline construction, CI/CD and orchestration</span>
+        <span class="note">The DataOps and orchestration courses own how the step is built and scheduled. Here the step already exists and only has to be safe to run twice.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill light">◐</span>
+        <span class="name">Recording what the backfill changed</span>
+        <span class="note">Session 6. The incident package quotes the backfill log row rather than reconstructing it.</span>
+      </div>
+      <div class="covered-row">
+        <span class="status pill inkpill">·</span>
+        <span class="name">Traces, spans and alerting for AI services</span>
+        <span class="note">Not covered by design. That is the AI observability course; this track is tables, partitions and the people on call for them.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 5 cheat sheet</h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Twice equals once</b><span>Delete the partition's rows, insert the recomputed ones, keyed on partition_hour, one transaction. Never append.</span></div>
+      <div class="cheat-item"><b>One code path</b><span>The nightly step and the backfill are the same step pointed at different hours.</span></div>
+      <div class="cheat-item"><b>Watermark = correct through</b><span>Move it back to the hour before the first bad partition. Six hours, not a month.</span></div>
+      <div class="cheat-item"><b>Night 9 needed no reset</b><span>Nothing landed, so the watermark never advanced. The normal run caught up.</span></div>
+      <div class="cheat-item"><b>Announce before recompute</b><span>A signed number that changes silently is a governance event. Old total, direction, run time, to the people who signed.</span></div>
+      <div class="cheat-item"><b>Consumers are a table</b><span>Kind, owner, rank, re-trigger command, read log. The notification is generated, not remembered.</span></div>
+      <div class="cheat-item"><b>Replay in rank order</b><span>Partitions, then rank 1, then rank 2. The export reads the rebuilt report, never the old one.</span></div>
+      <div class="cheat-item"><b>File the diff</b><span>total_before captured at announcement, total_after at the end, both in the backfill log. 1,284,310.55 to 1,271,902.10.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <div class="wrap">
+    <p>Builder session 5 of 8 · learn-data-reliability-with-phoebe · by Phoebe Fu</p>
+    <nav class="pagenav">
+      <a href="b4-runbooks.html">← Builder session 4 · Runbooks</a>
+      <a href="b6-incident-package.html">Builder session 6 · The incident package →</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>
