@@ -3,6 +3,8 @@
    (CSS var names still read --indigo/--amber; they hold SQL-blue values.) */
 
 :root {
+  --faint-text: #5C728F;
+  --fill-solid: #9E6506;
   --indigo: #1E293B;
   --indigo-deep: #0F172A;
   --indigo-mid: #94A3B8;
@@ -1187,7 +1189,7 @@ figure.zoomable.can-scroll figcaption::after {
 .dh-track { display: flex; flex-wrap: wrap; gap: 3px; }
 .dh-cell { font: 700 0.66rem ui-monospace, Menlo, monospace; padding: 3px 6px; border-radius: 5px;
   background: var(--indigo-50); color: var(--indigo-deep); transition: all .1s linear; }
-.dh-cell.rest { background: var(--paper); color: var(--faint); }
+.dh-cell.rest { background: var(--paper); color: var(--faint-text); }
 .dh-cell.now { background: var(--amber); color: var(--amber-ink); transform: scale(1.18); }
 .dh-panel { border: 1px solid var(--hairline); border-radius: var(--radius); background: #fff; overflow: hidden; }
 .dh-phead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -1337,7 +1339,7 @@ span.mono {
 .hb-findings li:last-child { border-bottom: 0; }
 .hb-sev { font-size: .68rem; font-weight: 800; border-radius: 999px; padding: .1rem .45rem; white-space: nowrap; }
 .hb-s4 { background: #991B1B; color: #fff; }
-.hb-s3 { background: #F59E0B; color: #fff; }
+.hb-s3 { background: var(--fill-solid); color: #fff; }
 .hb-s2 { background: var(--amber-50); color: var(--amber-ink); }
 .hb-s1 { background: var(--indigo-50); color: var(--indigo-deep); }
 .hb-findings .hb-src { font-size: .72rem; color: var(--muted); white-space: nowrap; }
